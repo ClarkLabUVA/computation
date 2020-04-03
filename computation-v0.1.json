@@ -1,0 +1,44 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "Fairscape Computation Service",
+        "description": "This service runs computational jobs on the Apache Spark platform while producing evidence graphs"
+    },
+    "externalDocs": {},
+    "paths": {
+        "/run": {
+            "post": {
+                "description":"",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+
+        },
+        "/status": {
+            "get": {
+                "description":"",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }},
+        "/evidence": {
+            "get": {
+                "description":"",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        }
+    },
+    "components": {}
+}
