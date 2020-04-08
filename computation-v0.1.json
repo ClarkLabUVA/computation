@@ -2,43 +2,215 @@
     "openapi": "3.0.1",
     "info": {
         "title": "Fairscape Computation Service",
+        "version": "0.0.1",
         "description": "This service runs computational jobs on the Apache Spark platform while producing evidence graphs"
     },
-    "externalDocs": {},
     "paths": {
-        "/run": {
+        "/job": {
             "post": {
-                "description":"",
+                "description":"Endpoint for Submitting a Job ",
                 "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/multipart-form": {
+                            "schema": {
+                                "properties": {
+                                    "metadata": {
+                                        "$ref": "#/components/schemas/identifier"
+                                    },
+                                    "job": {
+                                        "type": "string",
+                                        "description": "Encoded Zip Body of spark jobs with dependencies"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/identifier",
+                                    "required": [
+                                        "@id",
+                                        "@type",
+                                        "@context",
+                                        "evi:usedSoftware",
+                                        "evi:usedDataset"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "description": "List all computations",
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "computations": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/identifier"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
-
         },
-        "/status": {
+        "/job/{identifier}": {
             "get": {
-                "description":"",
-                "parameters": [],
+                "description":"Get the Status of a Job",
+                "parameters": [
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true,
+                        "allowEmptyValue": false,
+                        "description": "The GUID Identifier for a Computation"
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/identifier",
+                                    "required": [
+                                        "@id",
+                                        "@type",
+                                        "@context",
+                                        "evi:startedAtTime",
+                                        "status"
+                                    ]
+                                }
+                            }
+                        }
                     }
                 }
-            }},
-        "/evidence": {
+            }
+        },
+        "/evidence/{identifier}": {
             "get": {
-                "description":"",
-                "parameters": [],
+                "description":"Retrieve the Full",
+                "parameters": [
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true,
+                        "allowEmptyValue": false,
+                        "description": "The GUID Identifier for a Computation"
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "content": {
+                            "application/json": {}
+                        }
                     }
                 }
             }
         }
     },
-    "components": {}
+    "components": {
+        "schemas": {
+            "identifier": {
+                "type": "object",
+                "properties": {
+                    "@id": {
+                        "type": "string",
+                        "example": "ark:9999/test"
+                    },
+                    "@type": {
+                        "type": "string",
+                        "enum": ["Software", "evi:Computation"]
+                    },
+                    "@context": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "enum": ["https://schema.org/"]
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "@base": {
+                                        "type": "string",
+                                        "enum": ["https://schema.org/"]
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "parameters": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "string"
+                                },
+                                "position": {
+                                    "type": "integer",
+                                    "description": "Position of argument in array"
+                                },
+                                "prefix": {
+                                    "type": "string",
+                                    "description": "Prefix of the argument"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Name of parameter value"
+                                }
+                            }
+                        }
+                    },
+                    "evi:usedSoftware": {
+                        "description": "Software used in this computation"
+                    },
+                    "evi:usedDataset": {
+                        "description": "Dataset used in this computation"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Status of a Current Computation"
+                    },
+                    "evi:startedAtTime": {
+                        "type": "string",
+                        "format": "datetime",
+                        "description": "Time Started of Computation Activity"
+                    },
+                    "evi:endedAtTime": {
+                        "type": "string",
+                        "format": "datetime",
+                        "description": "Time a Computation Finished"
+                        
+                    }
+                },
+                "additionalProperties": true
+            }
+        }
+    }
 }
