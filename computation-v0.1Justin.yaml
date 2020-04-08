@@ -1,0 +1,121 @@
+swagger: '2.0'
+info:
+  description: First Outline of Compute Service
+  version: 1.0.0
+  title: Compute Service API
+  contact:
+    email: jcn4rh@virginia.edu
+
+paths:
+  /compute:
+    get:
+      # tags:
+      # - developers
+      summary: Gets Job Status of given job id
+      operationId: searchInventory
+      description: |
+        By passing in a job id you can check status of job, running complete error...
+      produces:
+      - application/json
+      parameters:
+      - in: query
+        name: jobID
+        description: Job ID of Interest
+        required: True
+        type: string
+      responses:
+        200:
+          description: Completed Job
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/runningJob'
+        400:
+          description: bad input parameter
+    post:
+      # tags:
+      # - admins
+      summary: Submits job to spark cluster
+      operationId: addInventory
+      description: Submits job to spark cluster
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - in: body
+        name: jobInfo
+        description: Details data and script of interest 
+        schema:
+          $ref: '#/definitions/jobSubmission'
+      responses:
+        201:
+          description: Job Submitted
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/sampleAccepted'
+        400:
+          description: invalid input, object invalid
+definitions:
+  runningJob:
+    type: object
+    required:
+    - jobID
+    - status
+    properties:
+      jobID:
+        type: string
+        format: uuid
+        example: ark:9999/d290f1ee-6c54-4b01-90e6-d701748f0851
+      status:
+        type: string
+        example: Running
+  sampleAccepted:
+    type: object
+    required:
+    - jobID
+    properties:
+      jobID:
+        type: string
+        format: uuid
+        example: ark:9999/d290f1ee-6c54-4b01-90e6-d701748f0851
+  completedJob:
+    type: object
+    required:
+    - jobID
+    - status
+    properties:
+      jobID:
+        type: string
+        format: uuid
+        example: ark:9999/d290f1ee-6c54-4b01-90e6-d701748f0851
+      status:
+        type: string
+        example: Complete
+      outputIDs:
+        type: array
+        items:
+          type: string
+        example: [ark:9999/123-abc,ark:9999/afge-34be]
+  jobSubmission:
+    type: object
+    required:
+    - datasetID
+    - scriptID
+    properties:
+      datasetID:
+        type: string
+        format: uuid
+        example: ark:9999/ac1ee-6c54-4b01-90e6-d701748f0851
+      scriptID:
+        type: string
+        example: ark:9999/adbas-01-90e6-d701748f0851
+
+        
+
+basePath: /jniestroy/Compute-Service/1.0.0
+schemes:
+ - https
+# Added by API Auto Mocking Plugin
+host: virtserver.swaggerhub.com
