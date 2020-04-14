@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sparkdriver2
+  namespace: default
+spec:
+  selector:
+    app: sparkdriver2
+  clusterIP: None
+  ports:
+  - name: spark-port
+    protocol: TCP
+    port: 8080
+    targetPort: 8080

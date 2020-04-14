@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sparkjobtests
+  namespace: default
+  labels:
+    app: sparkjobtests
+spec:
+  serviceAccountName: spark
+  restartPolicy: Never
+  containers:
+  - name: sparkjobtests
+    imagePullPolicy: Always
+    image: jniestroy/spark:0.0.1
+    command:
+    - /opt/spark/bin/spark-submit
+    - "--master"
+    - "k8s://https://10.250.125.97:6443"
+    - "--conf"
+    - "spark.kubernetes.authenticate.driver.serviceAccountName=spark2"
+    - "--conf"
+    - "spark.kubernetes.namespace=default"
+    - "--conf"
+    - "spark.kubernetes.pyspark.pythonVersion=3"
+    - "--conf"
+    - "spark.kubernetes.container.image=jniestroy/spark:0.0.1"
+    - "--conf"
+    - "spark.sql.execution.arrow.enabled=true"
+    - "--conf"
+    - "spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem"
+    - "--conf"
+    - "spark.hadoop.fs.s3a.committer.name=partitioned"
+    - "--conf"
+    - "spark.hadoop.fs.s3a.connection.ssl.enabled=false"
+    - "--conf"
+    - "spark.hadoop.fs.s3a.path.style.access=true"
