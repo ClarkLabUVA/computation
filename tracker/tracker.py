@@ -37,19 +37,20 @@ def add_id_to_track():
 
     track_id = inputs['job_id']
 
-    exists = find_pod(track_id)
+    exists = find_pod('sparkjob-' + track_id)
 
     if not exists:
 
-        return "Can't Find Given Pod."
+        return "No Pod"
 
     def track(track_id):
 
-        while pod_running(track_id):
+        while pod_running('sparkjob-' + track_id):
 
+            print("Tracking: " + track_id)
             time.sleep(30)
 
-        job_status, logs = get_pod_logs(track_id)
+        job_status, logs = get_pod_logs('sparkjob-' + track_id)
 
         print(track_id)
         print("Status: " + job_status)

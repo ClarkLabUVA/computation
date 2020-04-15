@@ -38,21 +38,19 @@ def gather_inputs(request):
 
     return True, inputs
 
-def pod_running(job_id):
+def pod_running(pod_name):
     '''
     checks whether pod for given job is Running
     '''
 
     k.config.load_incluster_config()
-
     v1 = k.client.CoreV1Api()
 
-    service_name = "sparkjob-" + job_id
     namespace = "default"
 
     try:
 
-        pod_info = v1.read_namespaced_pod_status(service_name,namespace,
+        pod_info = v1.read_namespaced_pod_status(pod_name,namespace,
                         pretty = True)
 
         status = pod_info._status.phase
@@ -67,24 +65,21 @@ def pod_running(job_id):
 
         return False
 
-def find_pod(job_id):
+def find_pod(pod_name):
     '''
     checks whether pod for given job is Running
     '''
 
     k.config.load_incluster_config()
-
     v1 = k.client.CoreV1Api()
 
-    service_name = "sparkjob-" + job_id
+
     namespace = "default"
 
     try:
 
-        pod_info = v1.read_namespaced_pod_status(service_name,namespace,
+        pod_info = v1.read_namespaced_pod_status(pod_name,namespace,
                         pretty = True)
-
-        status = pod_info._status.phase
 
     except:
 
@@ -92,7 +87,7 @@ def find_pod(job_id):
 
     return True
 
-def get_pod_logs(job_id):
+def get_pod_logs(pod_name):
     '''
     Gets pod logs for job pod
     '''
@@ -101,13 +96,13 @@ def get_pod_logs(job_id):
 
     v1 = k.client.CoreV1Api()
 
-    service_name = "sparkjob-" + job_id
+
     namespace = "default"
 
-    pod_logs = v1.read_namespaced_pod_log(service_name,namespace,
+    pod_logs = v1.read_namespaced_pod_log(pod_name,namespace,
                     pretty = True)
 
-    pod_info = v1.read_namespaced_pod_status(service_name,namespace,
+    pod_info = v1.read_namespaced_pod_status(pod_name,namespace,
                     pretty = True)
 
     status = pod_info._status.phase
@@ -186,7 +181,7 @@ def clean_up_pods(job_id):
     try:
 
         delete_pop = v1.delete_namespaced_pod(pod_name,namespace)
-        delete_service = v1.delete_namespaced_pod(service_name,namespace)
+        delete_service = v1.delete_namespaced_service(service_name,namespace)
 
     except:
 

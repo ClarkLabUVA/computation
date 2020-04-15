@@ -9,7 +9,8 @@ RUN apt-get update \
 RUN pip install kubernetes
 RUN pip install flask
 RUN pip install minio
+RUN pip install uwsgi
 
 COPY . .
 
-ENTRYPOINT ["python3"]
+ENTRYPOINT [ "uwsgi", "--ini", "http.ini"]
