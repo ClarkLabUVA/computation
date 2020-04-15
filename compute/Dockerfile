@@ -8,7 +8,8 @@ RUN apt-get update \
 
 RUN pip install kubernetes
 RUN pip install flask
+RUN pip install uwsgi
 
-COPY . . 
+COPY . .
 
-ENTRYPOINT ["python3"]
+ENTRYPOINT [ "uwsgi", "--ini", "http.ini"]
