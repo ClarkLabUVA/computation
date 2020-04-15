@@ -28,9 +28,49 @@ def mint_ouput_ids(job_id):
 
     pass
 
-def delete_service(service_def):
+def delete_service(job_id):
+    '''
+    Removes completed Pod and Service
+    '''
 
-    pass
+    k.config.load_incluster_config()
+    v1 = k.client.CoreV1Api()
+
+    service_name = "sparkjob-" + job_id
+    namespace = "default"
+
+    try:
+
+        delete_service = v1.delete_namespaced_service(service_name,namespace)
+
+    except:
+
+        return False
+
+    return True
+
+def clean_up_pods(job_id):
+    '''
+    Removes completed Pod and Service
+    '''
+
+    k.config.load_incluster_config()
+    v1 = k.client.CoreV1Api()
+
+    pod_name = "sparkjob-" + job_id
+    service_name = "sparkjob-" + job_id
+    namespace = "default"
+
+    try:
+
+        delete_pop = v1.delete_namespaced_pod(pod_name,namespace)
+        delete_service = v1.delete_namespaced_service(service_name,namespace)
+
+    except:
+
+        return False
+
+    return True
 
 def create_service(service_def):
 
@@ -136,7 +176,7 @@ def validate_input(id):
 
     if r.status_code != 200:
 
-        return False, "Identifier Doesn't Exist"
+        return False, "Identifier Doesn't Exist."
 
     try:
 
@@ -148,7 +188,7 @@ def validate_input(id):
 
     except:
 
-        return False, "Distribution not in right spot"
+        return False, "Distribution not found. Or distribution formatting different than expected."
 
     return True, file_location
 

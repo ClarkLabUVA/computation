@@ -22,24 +22,7 @@ def homepage():
 
     return "Status: Working"
 
-@app.route('/test')
-def test():
-
-    r = requests.get('http://localhost:5001/')
-    return r.content.decode()
-
-@app.route('/track',methods = ['POST','GET'])
-def track_job():
-
-    valid, inputs = gather_inputs(request)
-
-    job_id = inputs['job_id']
-
-    r = requests.post('http://localhost:5001/track',json = {'job_id':job_id})
-
-    return r.content.decode()
-
-@app.route('/compute',methods = ['POST','GET'])
+@app.route('/job',methods = ['POST','GET'])
 def compute():
 
 
@@ -47,7 +30,7 @@ def compute():
 
     if not valid:
 
-        return (jsonify({'error':inputs,'valid':False}))
+        return jsonify({'error':inputs,'valid':False}),400
 
     data_id = inputs['datasetID']
     script_id = inputs['scriptID']
@@ -60,37 +43,44 @@ def compute():
     data_location = "Testingtoseeifthisworks"
 
 
-    if not ( valid_data and valid_script ):
-        return "Identifier not known for one of them"
+    if not valid_data:
+        return jsonify({'error':'Data ' + data_location}),400
+    if not valid_script:
+        return jsonify({'error':'Script ' + data_location}),400
 
 
 
     success, job_id = mint_job_id(data_id,script_id)
 
     if not success:
-        return "Minting Job ID Failed."
+        return jsonify({'error':'Minting Job Identifier failed'}),503
 
 
     pod, service = update_pod_service_yaml(data_location,script_location,job_id)
 
-
     success = create_service(service)
-
     if not success:
         delete_job_id(job_id)
-        return "failed to make service"
+
+        return jsonify({'error':'Failed to make service.'}),500
 
 
     success = create_pod(pod)
-
     if not success:
-        delete_service(service)
+        delete_service(job_id)
         delete_job_id(job_id)
-        return "failed to make pod"
+
+        return jsonify({'error':'Failed to make pod.'}),500
 
     tracked = track(job_id)
 
-    print(tracked)
+    if 'Tracking' not in str(tracked):
+
+        clean_up_pods(job_id)
+        delete_job_id(job_id)
+
+        return "failed to track"
+
 
     return job_id
 
