@@ -1,13 +1,10 @@
-import requests
-import json
-import sys
-import random
+import time,requests,json, sys, random, os, warnings, logging
 from datetime import datetime
-import os
-import time
-import warnings
 from flask import Flask, render_template, request, redirect,jsonify
 from funcs import *
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 MINIO_URL = os.environ.get('MINIO_URL','minionas.uvadcos.io/')
 MINIO_ACCESS_KEY = os.environ.get('MINIO_ACCESS_KEY')
@@ -20,17 +17,27 @@ app = Flask(__name__)
 @app.route('/')
 def homepage():
 
+    logger.info('Homepage handling request %s', request)
     return "Status: Working"
 
 @app.route('/job',methods = ['POST','GET'])
 def compute():
 
+    logger.info('Job endpoint handling request %s', request)
+
+    if request.method == 'GET':
+
+        running_pods = get_running_pods()
+
+        return jsonify({'runningJobIds':running_pods}),200
+
 
     valid, inputs = gather_inputs(request)
-
     if not valid:
 
+        logger.info('User gave invalid inputs %s', str(inputs))
         return jsonify({'error':inputs,'valid':False}),400
+
 
     data_id = inputs['datasetID']
     script_id = inputs['scriptID']
@@ -39,7 +46,7 @@ def compute():
     #valid_script, script_location = validate_input(script_id)
 
     valid_data,valid_script = True,True
-    script_location = "s3a://breakfast/test.py"
+    script_location = "s3a://breakfast/testnotreal.py"
     data_location = "Testingtoseeifthisworks"
 
 
@@ -58,24 +65,36 @@ def compute():
 
     pod, service = update_pod_service_yaml(data_location,script_location,job_id)
 
-    success = create_service(service)
-    if not success:
-        delete_job_id(job_id)
+    logger.info('Creating Service %s', str(service))
+    try:
 
+        s_resp = create_service(service)
+
+    except:
+
+        logger.error('Failed to create service.', exc_info=True)
+        delete_job_id(job_id)
         return jsonify({'error':'Failed to make service.'}),500
 
+    logger.info('Creating Pod %s', str(pod))
+    try:
 
-    success = create_pod(pod)
-    if not success:
-        delete_service(job_id)
+        p_resp = create_pod(pod)
+
+    except:
+
+        logger.error('Failed to create pod.', exc_info=True)
+        delete_service('sparkjob-' + job_id)
         delete_job_id(job_id)
-
         return jsonify({'error':'Failed to make pod.'}),500
 
+    logger.info('Tracking ID %s', job_id)
     tracked = track(job_id)
+
 
     if 'Tracking' not in str(tracked):
 
+        logger.error('Tracking failed on job id: %s', job_id)
         clean_up_pods(job_id)
         delete_job_id(job_id)
 
