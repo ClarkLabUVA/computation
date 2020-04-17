@@ -44,6 +44,26 @@ class Test_get_pod_logs(unittest.TestCase):
 
         self.assertEqual(status,'Running')
 
+class Test_gather_outputs(unittest.TestCase):
+
+    def test_empty_folder(self):
+
+         outputs = gather_job_outputs('randomtestofemptyfolder')
+
+         self.assertEqual(outputs,[])
+
+    def test_non_empty(self):
+
+        outputs = gather_job_outputs('EEG')
+
+        expected = ['EEG/OperationsFile.py','EEG/Periphery.py','EEG/eeg_500_OG.csv','EEG/runOG.py']
+
+        self.assertEqual(outputs,expected)
+
+
+
+
+
 
 if __name__ == '__main__':
     unittest.main()
