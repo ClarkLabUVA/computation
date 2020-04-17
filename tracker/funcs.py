@@ -178,13 +178,8 @@ def clean_up_pods(job_id):
     service_name = "sparkjob-" + job_id
     namespace = "default"
 
-    try:
 
-        delete_pop = v1.delete_namespaced_pod(pod_name,namespace)
-        delete_service = v1.delete_namespaced_service(service_name,namespace)
+    delete_pop = v1.delete_namespaced_pod(pod_name,namespace)
+    delete_service = v1.delete_namespaced_service(service_name,namespace)
 
-    except:
-
-        return False
-
-    return True
+    return
