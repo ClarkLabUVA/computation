@@ -1,4 +1,4 @@
-import requests
+import requests, logging
 import time
 import os
 from datetime import datetime
@@ -14,6 +14,55 @@ MINIO_SECRET = os.environ.get('MINIO_SECRET')
 
 ORS_URL = os.environ.get("ORS_URL","ors.uvadco.io/")
 
+def parse_request(request):
+
+    success, inputs = gather_inputs(request)
+
+    if not success:
+
+        return False,'','','Post json with keys datasetID and scriptID'
+
+    try:
+
+        data_id = inputs['datasetID']
+
+    except:
+
+        return False,'','','JSON missing required key datasetID'
+
+    try:
+
+        script_id = inputs['scriptID']
+
+    except:
+
+        return False,'','','JSON missing required key scriptID'
+
+    return True, data_id,script_id,''
+
+def get_distribution(id):
+    """Validates that given identifier exists in Mongo.
+        Returns location in minio. """
+    r = requests.get(ORS_URL + id)
+
+    if r.status_code != 200:
+
+        return False, "Identifier Doesn't Exist."
+
+    try:
+
+        data_dict = r.json()
+
+        data_url = data_dict['distribution'][0]['contentUrl']
+
+        file_location = '/'.join(data_url.split('/')[1:])
+
+    except:
+
+        return False, "Distribution not found. Or distribution formatting different than expected."
+
+    return True, file_location
+
 def track(job_id):
 
     r = requests.post('http://localhost:5001/track',json = {'job_id':job_id})
@@ -28,7 +77,7 @@ def mint_ouput_ids(job_id):
 
     pass
 
-def delete_service(job_id):
+def delete_service(service_name):
     '''
     Removes completed Pod and Service
     '''
@@ -36,12 +85,33 @@ def delete_service(job_id):
     k.config.load_incluster_config()
     v1 = k.client.CoreV1Api()
 
-    service_name = "sparkjob-" + job_id
+
     namespace = "default"
 
     try:
 
         delete_service = v1.delete_namespaced_service(service_name,namespace)
+
+    except:
+
+        return False
+
+    return True
+
+def delete_pod(pod_name):
+    '''
+    Removes Pod
+    '''
+
+    k.config.load_incluster_config()
+    v1 = k.client.CoreV1Api()
+
+
+    namespace = "default"
+
+    try:
+
+        delete_service = v1.delete_namespaced_pod(pod_name,namespace)
 
     except:
 
@@ -78,39 +148,30 @@ def create_service(service_def):
 
     v1 = k.client.CoreV1Api()
 
-    try:
-        resp = v1.create_namespaced_service(
-                    body = service_def,namespace="default")
 
-    except:
+    resp = v1.create_namespaced_service(body = service_def,
+                                        namespace="default")
 
-        return False
+    return resp
 
-    return True
 
 def create_pod(pod_def):
 
     k.config.load_incluster_config()
-
     v1 = k.client.CoreV1Api()
 
-    try:
-        resp = v1.create_namespaced_pod(
-                    body = pod_def,namespace="default")
+    resp = v1.create_namespaced_pod(body = pod_def,
+                                    namespace="default")
 
-    except:
-
-        return False
-
-    return True
+    return resp
 
 def update_pod_service_yaml(data_location,script_location,job_id):
 
-    with open("pod.yaml") as f:
+    with open("./yamls/pod.yaml") as f:
 
         pod = yaml.safe_load(f)
 
-    with open("service.yaml") as f:
+    with open("./yamls/service.yaml") as f:
 
         service = yaml.safe_load(f)
 
@@ -168,6 +229,86 @@ def gather_inputs(request):
         (jsonify({'error':"Please POST JSON file",'valid':False}))
 
     return True, inputs
+
+def find_pod(pod_name):
+    '''
+    checks whether pod for given job is Running
+    '''
+
+    k.config.load_incluster_config()
+    v1 = k.client.CoreV1Api()
+
+
+    namespace = "default"
+
+    try:
+
+        pod_info = v1.read_namespaced_pod_status(pod_name,namespace,
+                        pretty = True)
+
+    except:
+
+        return False
+
+    return True
+
+def get_running_jobs():
+    '''
+    gathers all running jobs returns list
+    of pod names
+    '''
+
+    k.config.load_incluster_config()
+    v1 = k.client.CoreV1Api()
+
+    pods = v1.list_namespaced_pod('default', pretty=True)
+
+    active_jobs = []
+    for pod in pods.items:
+
+        pod_name = pod.metadata.name
+        if 'sparkjob' in pod_name:
+            active_jobs.append(pod_name.replace('sparkjob-',''))
+
+    return active_jobs
+
+def list_services():
+    '''
+    List all services on kubernetes
+    '''
+
+    k.config.load_incluster_config()
+    v1 = k.client.CoreV1Api()
+
+    services = v1.list_namespaced_service('default', pretty=True)
+
+    list_services = []
+    for service in services.items:
+
+        service_name = service.metadata.name
+
+        list_services.append(service_name)
+
+    return list_services
+
+def list_pods():
+    '''
+    List all pods on kubernetes
+    '''
+
+    k.config.load_incluster_config()
+    v1 = k.client.CoreV1Api()
+
+    pods = v1.list_namespaced_pod('default', pretty=True)
+
+    list_pods = []
+    for pod in pods.items:
+
+        pod_name = pod.metadata.name
+
+        list_pods.append(pod_name)
+
+    return list_pods
 
 def validate_input(id):
     """Validates that given identifier exists in Mongo.
