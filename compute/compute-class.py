@@ -15,11 +15,26 @@ ORS_URL = os.environ.get("ORS_URL","ors.uvadco.io/")
 
 app = Flask(__name__)
 
+app.url_map.converters['everything'] = EverythingConverter
+
 @app.route('/')
 def homepage():
 
     logger.info('Homepage handling request %s', request)
     return "Status: Working"
+
+@app.route('/job/<everything:ark>',methods = ['GET'])
+def job_status(ark):
+
+    logger.info('Status request for ark: %s', ark)
+
+    try:
+        status =  get_job_status(ark)
+    except:
+        logger.error('Error getting status of ark: %s',ark)
+        return jsonify('error':'Given ark either does not exist or is not a computation'),400
+
+    return jsonify({'Status':status})
 
 @app.route('/job',methods = ['POST','GET'])
 def compute():
@@ -79,7 +94,7 @@ def compute():
 
     if 'Tracking' not in str(tracked):
 
-        logger.error('Tracking failed on job id: %s', job_id)
+        logger.error('Tracking failed on job id: %s', job.job_id)
         job.delete_service()
         job.delete_pod()
         job.delete_id()

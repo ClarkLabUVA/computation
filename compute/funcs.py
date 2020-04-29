@@ -7,12 +7,26 @@ import string
 import yaml
 import kubernetes as k
 import json
+from werkzeug.routing import PathConverter
 
 MINIO_URL = os.environ.get('MINIO_URL','minionas.uvadcos.io/')
 MINIO_ACCESS_KEY = os.environ.get('MINIO_ACCESS_KEY')
 MINIO_SECRET = os.environ.get('MINIO_SECRET')
 
 ORS_URL = os.environ.get("ORS_URL","ors.uvadco.io/")
+
+class EverythingConverter(PathConverter):
+    regex = '.*?'
+
+def get_job_status(ark):
+
+    r = requests.get(ORS_URL + ark)
+
+    meta = r.json()
+
+    status = meta['status']
+
+    return status
 
 def parse_request(request):
 
@@ -43,6 +57,20 @@ def parse_request(request):
 def get_distribution(id):
     """Validates that given identifier exists in Mongo.
         Returns location in minio. """
+
+    if isinstance(id,list):
+
+        locations = []
+        for i in id:
+            success, location = get_distribution(i)
+
+            if success:
+                locations.append(location)
+            else:
+                return False, str(i) + ' ' +location
+
+        return True, locations
+
     r = requests.get(ORS_URL + id)
 
     if r.status_code != 200:

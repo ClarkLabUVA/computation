@@ -6,18 +6,20 @@ class Job:
 
     def __init__(self, request):
 
-        self.correct_inputs, self.dataset_id, self.script_id,self.error = parse_request(request)
+        self.correct_inputs, self.dataset_ids, self.script_id,self.error = parse_request(request)
+        if not isinstance(self.dataset_ids,list):
+            self.dataset_ids = [self.dataset_ids]
         self.script_location = "s3a://breakfast/test.py"
-        self.data_location = "Testingtoseeifthisworks"
+        self.data_locations = ["Testingtoseeifthisworks"]
         # if self.correct_inputs:
         #
-        #     real_data_id, self.data_location = get_distribution(self.dataset_id)
+        #     real_data_ids, self.data_locations = get_distribution(self.dataset_id)
         #     real_script_id, self.script_location = get_distribution(self.script_id)
         #
-        #     if not real_data_idata:
+        #     if not real_data_ids:
         #
         #         self.correct_inputs = False
-        #         self.error = self.data_location
+        #         self.error = self.data_locations
         #
         #     if not real_script_id:
         #
@@ -33,8 +35,9 @@ class Job:
         base_meta = {
             "@type":"eg:Computation",
             "began":datetime.fromtimestamp(time.time()).strftime("%A, %B %d, %Y %I:%M:%S"),
-            "eg:usedDataset":data_id,
-            "eg:usedSoftware":script_id
+            "eg:usedDataset":self.dataset_ids,
+            "eg:usedSoftware":self.script_id,
+            "status":'Running'
         }
 
         url = ORS_URL + "shoulder/ark:99999"
@@ -86,7 +89,8 @@ class Job:
 
         self.pod['spec']['containers'][0]['command'].append(self.script_location)
 
-        self.pod['spec']['containers'][0]['command'].append(self.data_location)
+        for location in self.data_locations:
+            self.pod['spec']['containers'][0]['command'].append(location)
 
         self.pod['spec']['containers'][0]['command'].append(self.job_id)
 
