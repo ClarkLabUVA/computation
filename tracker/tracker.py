@@ -46,14 +46,14 @@ def add_id_to_track():
 
     def track(track_id):
 
-        while pod_running('sparkjob-' + track_id):
+        logger.info('Thread following Job ID %s started.', track_id)
 
-            logger.info('Thread following Job ID %s started.', track_id)
+        while pod_running('sparkjob-' + track_id):
+            logger.info('Tracking running Job ID %s.', track_id)
             time.sleep(30)
 
         logger.info('Job %s completed', track_id)
         job_status, logs = get_pod_logs('sparkjob-' + track_id)
-
 
         outputs = gather_job_outputs(track_id)
         #output_ids = mint_output_ids(outputs,job_id)
@@ -62,11 +62,8 @@ def add_id_to_track():
         success = update_job_id(track_id,job_status,logs)
 
         try:
-
             clean_up_pods(track_id)
-
         except:
-
             logger.error('Failed to clean up after job.', exc_info=True)
 
 
