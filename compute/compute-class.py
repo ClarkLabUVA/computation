@@ -32,7 +32,7 @@ def job_status(ark):
         status =  get_job_status(ark)
     except:
         logger.error('Error getting status of ark: %s',ark)
-        return jsonify('error':'Given ark either does not exist or is not a computation'),400
+        return jsonify({'error':'Given ark either does not exist or is not a computation'}),400
 
     return jsonify({'Status':status})
 
@@ -105,4 +105,4 @@ def compute():
     return job.job_id
 
 if __name__ == "__main__":
-    app.run(debug = True)
+    app.run(host='0.0.0.0')
