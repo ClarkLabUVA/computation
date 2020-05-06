@@ -15,6 +15,19 @@ MINIO_SECRET = os.environ.get('MINIO_SECRET')
 
 ORS_URL = os.environ.get("ORS_URL","ors.uvadco.io/")
 
+def build_eg(job_id):
+
+    r = requests.post('eg/eg/' + job_id)
+
+    try:
+        result = r.json()
+
+        if 'error' in result.keys():
+            return False
+        else:
+            return True
+    except:
+        return False
 def gather_inputs(request):
     '''
     Gathers inputs from request
@@ -114,7 +127,10 @@ def get_pod_logs(pod_name):
     return status, pod_logs
 
 def gather_job_outputs(job_id):
-
+    '''
+    Looks in the job folder in minio and finds all
+    outputs of the computation
+    '''
     minioClient = minio.Minio(MINIO_URL,
                     access_key=MINIO_ACCESS_KEY,
                     secret_key=MINIO_SECRET,
@@ -130,7 +146,12 @@ def gather_job_outputs(job_id):
     return outputs
 
 def mint_output_ids(outputs,job_id):
+    '''
+    Mints Identifiers for all outputs of the
+    computation
+    '''
 
+    all_minted = True
     output_ids = []
     for output in outputs:
 
@@ -148,7 +169,7 @@ def mint_output_ids(outputs,job_id):
             }]
         }
 
-        r = requests.post(ORS_URL + + "shoulder/ark:99999",data = json.dumps(meta))
+        r = requests.post(ORS_URL + "shoulder/ark:99999",data = json.dumps(meta))
 
         returned = r.json()
 
@@ -156,7 +177,11 @@ def mint_output_ids(outputs,job_id):
 
             output_ids.append(returned['id'])
 
-    return output_ids
+        else:
+            output_ids.append({'error':'Failed minting id for ' + str(output)})
+            all_minted = False
+
+    return output_ids, all_minted
 
 def update_job_id(job_id,job_status,logs):
     '''
@@ -164,7 +189,14 @@ def update_job_id(job_id,job_status,logs):
     failure of job
     '''
 
-    pass
+    meta = {
+        "status":job_status,
+        "logs":logs,
+        'ended':time.time()
+    }
+    r = requests.put(ORS_URL + job_id,data = json.dumps(meta))
+
+    return
 
 def clean_up_pods(job_id):
     '''

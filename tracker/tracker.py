@@ -34,9 +34,9 @@ def add_id_to_track():
     valid, inputs = gather_inputs(request)
     track_id = inputs['job_id']
 
+    full_id = 'ark:99999/' + track_id
+
     logger.info('Tracking Job ID: %s', track_id)
-
-
     exists = find_pod('sparkjob-' + track_id)
 
     if not exists:
@@ -56,11 +56,19 @@ def add_id_to_track():
         job_status, logs = get_pod_logs('sparkjob-' + track_id)
 
         outputs = gather_job_outputs(track_id)
-        #output_ids = mint_output_ids(outputs,job_id)
+        output_ids, all_minted = mint_output_ids(outputs,job_id)
+
+        if not all_minted:
+            logger.error('Failed to mint all output ids for job ' %s.', track_id)
 
         logger.info('Updating Job ID: %s', track_id)
         success = update_job_id(track_id,job_status,logs)
 
+        for output_id in output_ids:
+            built = build_eg(track_id)
+            if not built:
+                logger.error('Failed to create eg for job %s',output_id)
+                
         try:
             clean_up_pods(track_id)
         except:
