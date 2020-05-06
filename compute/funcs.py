@@ -193,45 +193,45 @@ def create_pod(pod_def):
 
     return resp
 
-def update_pod_service_yaml(data_location,script_location,job_id):
-
-    with open("./yamls/pod.yaml") as f:
-
-        pod = yaml.safe_load(f)
-
-    with open("./yamls/service.yaml") as f:
-
-        service = yaml.safe_load(f)
-
-    service['metadata']['name'] = "sparkjob-" + job_id
-
-    service['spec']['selector']['app'] = "sparkjob-" + job_id
-
-    pod['metadata']['name'] = "sparkjob-" + job_id
-
-    pod['spec']['containers'][0]['name'] = "sparkjob-" + job_id
-
-    pod['metadata']['labels']['app'] = "sparkjob-" + job_id
-
-    pod['spec']['containers'][0]['command'].append("--conf")
-
-    pod['spec']['containers'][0]['command'].append("spark.hadoop.fs.s3a.endpoint=" + MINIO_URL)
-
-    pod['spec']['containers'][0]['command'].append("--conf")
-
-    pod['spec']['containers'][0]['command'].append("spark.hadoop.fs.s3a.access.key=" + MINIO_ACCESS_KEY)
-
-    pod['spec']['containers'][0]['command'].append("--conf")
-
-    pod['spec']['containers'][0]['command'].append("spark.hadoop.fs.s3a.secret.key=" + MINIO_SECRET)
-
-    pod['spec']['containers'][0]['command'].append(script_location)
-
-    pod['spec']['containers'][0]['command'].append(data_location)
-
-    pod['spec']['containers'][0]['command'].append(job_id)
-
-    return pod, service
+# def update_pod_service_yaml(data_location,script_location,job_id):
+#
+#     with open("./yamls/pod.yaml") as f:
+#
+#         pod = yaml.safe_load(f)
+#
+#     with open("./yamls/service.yaml") as f:
+#
+#         service = yaml.safe_load(f)
+#
+#     service['metadata']['name'] = "sparkjob-" + job_id
+#
+#     service['spec']['selector']['app'] = "sparkjob-" + job_id
+#
+#     pod['metadata']['name'] = "sparkjob-" + job_id
+#
+#     pod['spec']['containers'][0]['name'] = "sparkjob-" + job_id
+#
+#     pod['metadata']['labels']['app'] = "sparkjob-" + job_id
+#
+#     pod['spec']['containers'][0]['command'].append("--conf")
+#
+#     pod['spec']['containers'][0]['command'].append("spark.hadoop.fs.s3a.endpoint=" + MINIO_URL)
+#
+#     pod['spec']['containers'][0]['command'].append("--conf")
+#
+#     pod['spec']['containers'][0]['command'].append("spark.hadoop.fs.s3a.access.key=" + MINIO_ACCESS_KEY)
+#
+#     pod['spec']['containers'][0]['command'].append("--conf")
+#
+#     pod['spec']['containers'][0]['command'].append("spark.hadoop.fs.s3a.secret.key=" + MINIO_SECRET)
+#
+#     pod['spec']['containers'][0]['command'].append(script_location)
+#
+#     pod['spec']['containers'][0]['command'].append(data_location)
+#
+#     pod['spec']['containers'][0]['command'].append(job_id)
+#
+#     return pod, service
 
 def randomString(stringLength=10):
     """Generate a random string of fixed length """

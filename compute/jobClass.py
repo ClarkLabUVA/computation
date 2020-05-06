@@ -2,6 +2,12 @@ import requests, yaml, json
 import kubernetes as k
 from funcs import *
 
+MINIO_URL = os.environ.get('MINIO_URL','minionas.uvadcos.io/')
+MINIO_ACCESS_KEY = os.environ.get('MINIO_ACCESS_KEY')
+MINIO_SECRET = os.environ.get('MINIO_SECRET')
+
+ORS_URL = os.environ.get("ORS_URL","ors.uvadco.io/")
+
 class Job:
 
     def __init__(self, request):
@@ -9,10 +15,26 @@ class Job:
         self.correct_inputs, self.dataset_ids, self.script_id,self.error = parse_request(request)
         if not isinstance(self.dataset_ids,list):
             self.dataset_ids = [self.dataset_ids]
-        self.script_location = "s3a://breakfast/test.py"
+        self.script_location = "breakfast/test.py"
         self.data_locations = ["Testingtoseeifthisworks"]
-        # if self.correct_inputs:
-        #
+
+        if self.correct_inputs:
+            _, inputs = gather_inputs(request)
+
+            if 'prefix' in inputs.keys():
+                self.prefix = inputs['prefix']
+            else:
+                self.prefix = 'breakfast'
+
+            if 'executor-memory' in inputs.keys():
+                self.executor_memory = inputs['executor-memory']
+            else:
+                self.executor_memory = '5g'
+
+            if 'executors' in inputs.keys():
+                self.executors = inputs['executors']
+            else:
+                self.executor_memory = '1'
         #     real_data_ids, self.data_locations = get_distribution(self.dataset_id)
         #     real_script_id, self.script_location = get_distribution(self.script_id)
         #
@@ -76,23 +98,29 @@ class Job:
         self.pod['metadata']['labels']['app'] = "sparkjob-" + self.job_id
 
         self.pod['spec']['containers'][0]['command'].append("--conf")
-
         self.pod['spec']['containers'][0]['command'].append("spark.hadoop.fs.s3a.endpoint=" + MINIO_URL)
 
         self.pod['spec']['containers'][0]['command'].append("--conf")
-
         self.pod['spec']['containers'][0]['command'].append("spark.hadoop.fs.s3a.access.key=" + MINIO_ACCESS_KEY)
 
         self.pod['spec']['containers'][0]['command'].append("--conf")
-
         self.pod['spec']['containers'][0]['command'].append("spark.hadoop.fs.s3a.secret.key=" + MINIO_SECRET)
 
-        self.pod['spec']['containers'][0]['command'].append(self.script_location)
+        self.pod['spec']['containers'][0]['command'].append("--conf")
+        self.pod['spec']['containers'][0]['command'].append('spark.kubernetes.executor.request.cores=' + self.executors)
+
+        self.pod['spec']['containers'][0]['command'].append("--conf")
+        self.pod['spec']['containers'][0]['command'].append('spark.executor.memory=' + self.executor_memory)
+
+
+        self.pod['spec']['containers'][0]['command'].append('s3a://' + self.script_location)
+
+        self.pod['spec']['containers'][0]['command'].append('s3a://' + self.prefix + self.job_id)
 
         for location in self.data_locations:
-            self.pod['spec']['containers'][0]['command'].append(location)
+            self.pod['spec']['containers'][0]['command'].append('s3a://' + location)
 
-        self.pod['spec']['containers'][0]['command'].append(self.job_id)
+
 
     def delete_id():
 
