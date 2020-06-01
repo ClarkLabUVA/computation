@@ -36,6 +36,55 @@ def job_status(ark):
 
     return jsonify({'Status':status})
 
+@app.route('/nipype',methods = ['POST','GET'])
+def nipype_job():
+
+    logger.info('Job endpoint handling request %s', request)
+
+
+    job = Job(request)
+
+    if not job.correct_inputs:
+
+        return jsonify({'error':job.error}),400
+
+
+    minted = job.mint_job_id()
+
+    if not minted:
+        logger.error('Failed to mint identifier.')
+        return jsonify({'error':'Minting Job Identifier failed'}),503
+
+
+    job.create_nipype_defs()
+
+    logger.info('Creating Pod %s', str(job.pod))
+    try:
+
+        job.create_pod()
+
+    except:
+
+        logger.error('Failed to create pod.', exc_info=True)
+        job.delete_id()
+        return jsonify({'error':'Failed to make pod.'}),500
+
+
+
+    logger.info('Tracking ID %s', job.job_id)
+    tracked = track(job.job_id,job.prefix)
+
+    if 'Tracking' not in str(tracked):
+
+        logger.error('Tracking failed on job id: %s', job.job_id)
+        job.delete_pod()
+        job.delete_id()
+
+        return "failed to track"
+
+
+    return job.job_id
+
 @app.route('/job',methods = ['POST','GET'])
 def compute():
 
@@ -90,7 +139,7 @@ def compute():
 
 
     logger.info('Tracking ID %s', job.job_id)
-    tracked = track(job.job_id)
+    tracked = track(job.job_id,job.prefix)
 
     if 'Tracking' not in str(tracked):
 

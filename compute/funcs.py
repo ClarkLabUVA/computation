@@ -91,9 +91,9 @@ def get_distribution(id):
 
     return True, file_location
 
-def track(job_id):
+def track(job_id,prefix):
 
-    r = requests.post('http://localhost:5001/track',json = {'job_id':job_id})
+    r = requests.post('http://localhost:5001/track',json = {'job_id':job_id,'output_location':prefix})
 
     if r.status_code != 200:
 

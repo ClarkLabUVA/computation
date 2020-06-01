@@ -13,10 +13,10 @@ class Job:
     def __init__(self, request):
 
         self.correct_inputs, self.dataset_ids, self.script_id,self.error = parse_request(request)
+
         if not isinstance(self.dataset_ids,list):
             self.dataset_ids = [self.dataset_ids]
-        self.script_location = "breakfast/test.py"
-        self.data_locations = ["Testingtoseeifthisworks"]
+
 
         if self.correct_inputs:
             _, inputs = gather_inputs(request)
@@ -24,7 +24,7 @@ class Job:
             if 'prefix' in inputs.keys():
                 self.prefix = inputs['prefix']
             else:
-                self.prefix = 'breakfast'
+                self.prefix = 'breakfast/'
 
             if 'executor-memory' in inputs.keys():
                 self.executor_memory = inputs['executor-memory']
@@ -34,31 +34,33 @@ class Job:
             if 'executors' in inputs.keys():
                 self.executors = inputs['executors']
             else:
-                self.executor_memory = '1'
-        #     real_data_ids, self.data_locations = get_distribution(self.dataset_id)
-        #     real_script_id, self.script_location = get_distribution(self.script_id)
-        #
-        #     if not real_data_ids:
-        #
-        #         self.correct_inputs = False
-        #         self.error = self.data_locations
-        #
-        #     if not real_script_id:
-        #
-        #         self.correct_inputs = False
-        #         self.error = self.script_location
+                self.executors = '1'
+
+            real_data_ids, self.data_locations = get_distribution(self.dataset_ids)
+            real_script_id, self.script_location = get_distribution(self.script_id)
+
+            if not real_data_ids:
+
+                self.correct_inputs = False
+                self.error = self.data_locations
+
+            if not real_script_id:
+
+                self.correct_inputs = False
+                self.error = self.script_location
 
 
     def mint_job_id(self):
 
-        self.job_id = randomString(10)
-        return True
+        datasets = []
+        for id in self.dataset_ids:
+            datasets.append({'@id':id})
 
         base_meta = {
             "@type":"eg:Computation",
             "began":datetime.fromtimestamp(time.time()).strftime("%A, %B %d, %Y %I:%M:%S"),
-            "eg:usedDataset":self.dataset_ids,
-            "eg:usedSoftware":self.script_id,
+            "eg:usedDataset":datasets,
+            "eg:usedSoftware":{'@id':self.script_id},
             "status":'Running'
         }
 
@@ -69,10 +71,36 @@ class Job:
 
         if 'created' in returned:
 
-            self.job_id = returned['id']
+            self.job_id = returned['created'].split('/')[1]
             return True
 
         return False
+
+    def create_nipype_defs(self):
+
+        with open("./yamls/ni_pod.yaml") as f:
+
+            self.pod = yaml.safe_load(f)
+
+        str_datasetids = ''
+        for id in self.dataset_ids:
+            str_datasetids = str_datasetids + id + ','
+
+        self.pod_name = "sparkjob-" + self.job_id
+
+        self.pod['metadata']['name'] = "sparkjob-" + self.job_id
+
+        self.pod['spec']['containers'][0]['name'] = "sparkjob-" + self.job_id
+
+        self.pod['metadata']['labels']['app'] = "sparkjob-" + self.job_id
+
+        self.pod['spec']['containers'][0]['env'].append({'name':'DATA','value':str_datasetids})
+        self.pod['spec']['containers'][0]['env'].append({'name':'SCRIPT','value':self.script_id})
+        self.pod['spec']['containers'][0]['env'].append({'name':'OUTPUT','value':self.prefix + self.job_id})
+
+
+        print(self.pod)
+
 
     def create_kubernetes_defs(self):
 
@@ -112,7 +140,6 @@ class Job:
         self.pod['spec']['containers'][0]['command'].append("--conf")
         self.pod['spec']['containers'][0]['command'].append('spark.executor.memory=' + self.executor_memory)
 
-
         self.pod['spec']['containers'][0]['command'].append('s3a://' + self.script_location)
 
         self.pod['spec']['containers'][0]['command'].append('s3a://' + self.prefix + self.job_id)
@@ -122,9 +149,14 @@ class Job:
 
 
 
-    def delete_id():
+    def delete_id(self):
 
-        pass
+        url = ORS_URL + self.job_id
+
+        r = requests.delete(url)
+
+        return
+
 
     def create_pod(self):
 
