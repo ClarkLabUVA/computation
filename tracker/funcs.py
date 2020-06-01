@@ -17,17 +17,12 @@ ORS_URL = os.environ.get("ORS_URL","ors.uvadco.io/")
 
 def build_eg(job_id):
 
-    r = requests.post('eg/eg/' + job_id)
+    r = requests.get('http://eg/eg/' + job_id)
 
-    try:
-        result = r.json()
-
-        if 'error' in result.keys():
-            return False
-        else:
-            return True
-    except:
+    if 'error' in r.json().keys():
         return False
+
+    return True
 def gather_inputs(request):
     '''
     Gathers inputs from request
@@ -126,7 +121,7 @@ def get_pod_logs(pod_name):
 
     return status, pod_logs
 
-def gather_job_outputs(job_id):
+def gather_job_outputs(job_id,bucket,rest):
     '''
     Looks in the job folder in minio and finds all
     outputs of the computation
@@ -135,8 +130,9 @@ def gather_job_outputs(job_id):
                     access_key=MINIO_ACCESS_KEY,
                     secret_key=MINIO_SECRET,
                     secure=False)
-
-    objects = minioClient.list_objects('breakfast', prefix=job_id,
+    print(bucket)
+    print(rest)
+    objects = minioClient.list_objects(bucket, prefix= rest + job_id,
                                         recursive = True)
 
     outputs = []
@@ -158,15 +154,29 @@ def mint_output_ids(outputs,job_id):
         file_name = output.split('/')[-1]
         file_format = file_name.split('.')[-1]
 
+        dist_meta = {
+            "@type":"DataDownload",
+            "name":file_name,
+            "fileFormat":file_format,
+            "contentUrl":MINIO_URL + '/breakfast/' + output
+        }
+
+        r = requests.post(ORS_URL + "shoulder/ark:99999",data = json.dumps(dist_meta))
+
+        returned = r.json()
+
+        if 'created' in returned:
+            dist_meta['@id'] = returned['created']
+
+        else:
+            output_ids.append({'error':'Failed minting id for ' + str(output)})
+            all_minted = False
+            continue
+
         meta = {
             "name":file_name,
-            "evi:generatedBy":job_id,
-            "distribution":[{
-                "@type":"DataDownload",
-                "name":file_name,
-                "fileFormat":file_format,
-                "contentURL":MINIO_URL + output
-            }]
+            "eg:generatedBy":{'@id':job_id},
+            "distribution":[dist_meta]
         }
 
         r = requests.post(ORS_URL + "shoulder/ark:99999",data = json.dumps(meta))
@@ -175,7 +185,7 @@ def mint_output_ids(outputs,job_id):
 
         if 'created' in returned:
 
-            output_ids.append(returned['id'])
+            output_ids.append(returned['created'])
 
         else:
             output_ids.append({'error':'Failed minting id for ' + str(output)})
@@ -183,7 +193,7 @@ def mint_output_ids(outputs,job_id):
 
     return output_ids, all_minted
 
-def update_job_id(job_id,job_status,logs):
+def update_job_id(job_id,job_status,logs,output_ids):
     '''
     Updates Job Identifier to show completion or
     failure of job
@@ -192,10 +202,11 @@ def update_job_id(job_id,job_status,logs):
     meta = {
         "status":job_status,
         "logs":logs,
-        'ended':time.time()
+        'ended':time.time(),
+        'eg:supports':output_ids
     }
+    print(output_ids)
     r = requests.put(ORS_URL + job_id,data = json.dumps(meta))
-
     return
 
 def clean_up_pods(job_id):

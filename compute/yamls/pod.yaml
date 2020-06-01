@@ -11,7 +11,7 @@ spec:
   containers:
   - name: sparkjobtests
     imagePullPolicy: Always
-    image: jniestroy/spark:0.0.1
+    image: jniestroy/spark:0.0.2
     command:
     - /opt/spark/bin/spark-submit
     - "--master"
@@ -23,7 +23,7 @@ spec:
     - "--conf"
     - "spark.kubernetes.pyspark.pythonVersion=3"
     - "--conf"
-    - "spark.kubernetes.container.image=jniestroy/spark:0.0.1"
+    - "spark.kubernetes.container.image=jniestroy/spark:0.0.2"
     - "--conf"
     - "spark.sql.execution.arrow.enabled=true"
     - "--conf"
