@@ -115,6 +115,10 @@ class Job:
         self.service_name = "sparkjob-" + self.job_id
         self.pod_name = "sparkjob-" + self.job_id
 
+        str_locations = ''
+        for id in self.data_locations:
+            str_locations = 's3a://' + str_locations + id + ','
+
         self.service['metadata']['name'] = "sparkjob-" + self.job_id
 
         self.service['spec']['selector']['app'] = "sparkjob-" + self.job_id
@@ -124,6 +128,10 @@ class Job:
         self.pod['spec']['containers'][0]['name'] = "sparkjob-" + self.job_id
 
         self.pod['metadata']['labels']['app'] = "sparkjob-" + self.job_id
+
+        self.pod['spec']['containers'][0]['env'] = []
+        self.pod['spec']['containers'][0]['env'].append({'name':'DATA','value':str_locations})
+        self.pod['spec']['containers'][0]['env'].append({'name':'OUTPUT','value':self.prefix + self.job_id})
 
         self.pod['spec']['containers'][0]['command'].append("--conf")
         self.pod['spec']['containers'][0]['command'].append("spark.hadoop.fs.s3a.endpoint=" + MINIO_URL)

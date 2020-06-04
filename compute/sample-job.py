@@ -15,7 +15,7 @@ sqlContext = SQLContext(sc)
 
 # Outputs must be written to given folder in order mint ids
 # Output folder is given as first command line argument
-output_folder = sys,argv[1]
+output_folder = sys.argv[1]
 
 #Computation Passes Input files locations as 3rd argument on
 files = sys.argv[2:]
