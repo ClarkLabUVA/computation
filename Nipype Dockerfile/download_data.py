@@ -3,6 +3,7 @@ import sys
 import requests
 from minio import Minio
 from minio.error import ResponseError
+import json
 
 MINIO_URL = os.environ.get('MINIO_URL','minionas.uvadcos.io/')
 MINIO_ACCESS_KEY = os.environ.get('MINIO_ACCESS_KEY')
@@ -30,8 +31,8 @@ def get_distribution(id):
         return locations, names
     r = requests.get(ORS_URL + id)
     if r.status_code != 200:
+        print(ORS_URL + id)
         return False, "Identifier Doesn't Exist."
-    print(r.json())
     try:
         data_dict = r.json()
         data_url = data_dict['distribution'][0]['contentUrl']
@@ -41,16 +42,20 @@ def get_distribution(id):
         return '',''
     return file_location, name
 
-def download_all(locations,names):
+def download_all(locations,names,data_ids):
+    ids = {}
     for i in range(len(locations)):
         bucket = locations[i].split('/')[0]
         rest = "/".join(locations[i].split('/')[1:])
         data = minioClient.get_object(bucket, rest)
-        with open('/data/' + names[i], 'wb') as file_data:
+        with open('/data/' + locations[i].split('/')[-1], 'wb') as file_data:
             for d in data.stream(32*1024):
                 file_data.write(d)
-
+        ids['/data/' +  locations[i].split('/')[-1]] = data_ids[i]
+    return ids
 data_ids = os.environ.get("DATA")
 data_ids = data_ids.replace('[','').replace(']','').split(',')
 locations, names = get_distribution(data_ids)
-download_all(locations,names)
+ids = download_all(locations,names,data_ids)
+with open('/meta/inputs.json', 'w') as outfile:
+    json.dump(ids, outfile)
