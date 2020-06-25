@@ -198,6 +198,14 @@ def update_job_id(job_id,job_status,logs,output_ids):
     Updates Job Identifier to show completion or
     failure of job
     '''
+    if output_ids == []:
+        meta = {
+            "status":job_status,
+            "logs":logs,
+            'ended':time.time()
+        }
+        r = requests.put(ORS_URL + job_id,data = json.dumps(meta))
+        return
 
     meta = {
         "status":job_status,

@@ -19,6 +19,76 @@ def homepage():
     return "Tracker: Working"
 
 
+@app.route('/nitrack',methods = ['POST','GET'])
+def track_nipy():
+    '''
+    POST:
+        {"job_id":abc1234}
+        Tracks given job_id to completion
+        Returns True if tracking began sucessfully
+        Mints outputs and updates job Identifier as needed
+    '''
+
+    logger.info('Job endpoint handling request %s', request)
+
+    valid, inputs = gather_inputs(request)
+    track_id = inputs['job_id']
+
+    prefix = inputs['output_location']
+    bucket = prefix.split('/')[0]
+    in_bucket_location = '/'.join(prefix.split('/')[1:])
+
+    full_id = 'ark:99999/' + track_id
+
+    logger.info('Tracking Job ID: %s', track_id)
+    exists = find_pod('sparkjob-' + track_id)
+
+    if not exists:
+
+        logger.error('Pod does not exsist for job : %s', track_id)
+        return "No Pod"
+
+    def track(track_id):
+
+        logger.info('Thread following Job ID %s started.', track_id)
+
+        while pod_running('sparkjob-' + track_id):
+            logger.info('Tracking running Job ID %s.', track_id)
+            time.sleep(30)
+
+
+        job_status, logs = get_pod_logs('sparkjob-' + track_id)
+        logger.info('Job %s completed with status: ' + str(job_status), track_id)
+
+
+        #Nipype Container Handles all id minting
+
+        # outputs = gather_job_outputs(track_id,bucket,in_bucket_location)
+        # output_ids, all_minted = mint_output_ids(outputs,'ark:99999/' + track_id)
+        #
+        # if not all_minted:
+        #     logger.error('Failed to mint all output ids for job %s.', track_id)
+        #
+        # logger.info('Updating Job ID: %s', track_id)
+        success = update_job_id('ark:99999/' + track_id,job_status,logs,[])
+        #
+        # for output_id in output_ids:
+        #     built = build_eg('ark:99999/' + track_id)
+        #     if not built:
+        #         logger.error('Failed to create eg for job %s',output_id)
+
+        try:
+            clean_up_pods(track_id)
+        except:
+            logger.error('Failed to clean up after job.', exc_info=True)
+
+
+    thread = threading.Thread(target=track, kwargs={'track_id':track_id})
+    thread.start()
+
+    return "Tracking " + track_id
+
+
 @app.route('/track',methods = ['POST','GET'])
 def add_id_to_track():
     '''
