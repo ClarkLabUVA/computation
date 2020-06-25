@@ -17,5 +17,5 @@ source activate neuro
 python download_data.py $DATA
 python download_script.py $SCRIPT
 A="$(cut -d'/' -f2 <<<$SCRIPT)"
-python "/script/${A}.py"
+python "/script/${SCRIPTNAME}"
 python write_output_files.py
