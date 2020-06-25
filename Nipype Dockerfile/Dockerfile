@@ -158,7 +158,9 @@ RUN mkdir /data && chmod 777 /data && chmod a+s /data
 
 RUN mkdir /output && chmod 777 /output && chmod a+s /output
 
-RUN mkdir /script && chmod 777 /script && chmod a+s /output
+RUN mkdir /script && chmod 777 /script && chmod a+s /script
+
+RUN mkdir /meta && chmod 777 /script && chmod a+s /meta
 
 USER neuro
 
