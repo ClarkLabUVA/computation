@@ -72,7 +72,7 @@ def nipype_job():
 
 
     logger.info('Tracking ID %s', job.job_id)
-    tracked = track(job.job_id,job.prefix)
+    tracked = nitrack(job.job_id,job.prefix)
 
     if 'Tracking' not in str(tracked):
 

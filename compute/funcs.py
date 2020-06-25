@@ -101,6 +101,16 @@ def track(job_id,prefix):
 
     return r.content.decode()
 
+def nitrack(job_id,prefix):
+
+    r = requests.post('http://localhost:5001/nitrack',json = {'job_id':job_id,'output_location':prefix})
+
+    if r.status_code != 200:
+
+        return r.status_code
+
+    return r.content.decode()
+
 def mint_ouput_ids(job_id):
 
     pass

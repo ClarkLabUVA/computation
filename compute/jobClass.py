@@ -93,10 +93,16 @@ class Job:
         self.pod['spec']['containers'][0]['name'] = "sparkjob-" + self.job_id
 
         self.pod['metadata']['labels']['app'] = "sparkjob-" + self.job_id
-
+        self.pod['spec']['containers'][0]['env'] = []
+        self.pod['spec']['containers'][0]['env'].append({'name':'ORS_URL','value':ORS_URL})
+        self.pod['spec']['containers'][0]['env'].append({'name':'MINIO_ACCESS_KEY','value':MINIO_ACCESS_KEY})
+        self.pod['spec']['containers'][0]['env'].append({'name':'MINIO_URL','value':MINIO_URL})
+        self.pod['spec']['containers'][0]['env'].append({'name':'MINIO_SECRET','value':MINIO_SECRET})
         self.pod['spec']['containers'][0]['env'].append({'name':'DATA','value':str_datasetids})
         self.pod['spec']['containers'][0]['env'].append({'name':'SCRIPT','value':self.script_id})
+        self.pod['spec']['containers'][0]['env'].append({'name':'SCRIPTNAME','value':self.script_location.split('/')[-1]})
         self.pod['spec']['containers'][0]['env'].append({'name':'OUTPUT','value':self.prefix + self.job_id})
+        self.pod['spec']['containers'][0]['env'].append({'name':'JOBID','value':self.job_id})
 
 
         print(self.pod)
@@ -130,6 +136,10 @@ class Job:
         self.pod['metadata']['labels']['app'] = "sparkjob-" + self.job_id
 
         self.pod['spec']['containers'][0]['env'] = []
+        self.pod['spec']['containers'][0]['env'].append({'name':'ORS_URL','value':ORS_URL})
+        self.pod['spec']['containers'][0]['env'].append({'name':'MINIO_ACCESS_KEY','value':MINIO_ACCESS_KEY})
+        self.pod['spec']['containers'][0]['env'].append({'name':'MINIO_URL','value':MINIO_URL})
+        self.pod['spec']['containers'][0]['env'].append({'name':'MINIO_SECRET','value':MINIO_SECRET})
         self.pod['spec']['containers'][0]['env'].append({'name':'DATA','value':str_locations})
         self.pod['spec']['containers'][0]['env'].append({'name':'OUTPUT','value':self.prefix + self.job_id})
 
