@@ -1,52 +1,80 @@
-from graph_classes import *
+from new_classes import *
 import networkx as nx
 import os
-ORS_URL = os.environ.get("ORS_URL","http://mds.ors/")
+
+with open('/meta/inputs.json') as json_file:
+    LOCATION_ID = json.load(json_file)
+OUTPUT_ID = {}
+
 def parse(wf):
 
-    with open('/meta/inputs.json') as json_file:
-        id_dict = json.load(json_file)
+    #Since nipype node inputs file locations aren't consistient
+    #need two dicts one with output of nodes and associated ids
+    #second tying file paths to ids
 
-    nodes =list(nx.topological_sort(wf))
+
+    adj = wf.__dict__['_adj']
+    nodes = list(nx.topological_sort(wf))
+    str_node_names = str(nodes).replace('[','').replace(']','').replace(' ','').split(',')
+    index = 0
+
     for node in nodes:
 
-        #converts Nipype node into simpler interpretation simply to parse
-        #inputs and outputs
-        current_node = Node(node)
+        node_name = str_node_names[index]
 
+        #New init won't get inputs
+        #Will just create neccesary variables (name,node,ids,inputs)
+        c_node = Node(node,node_name)
 
-        for input_name,input in current_node.input_files.items():
-            try:
-                current_node.ids.append(id_dict[input])
-            except:
-                print('\n\n\n\n\n' + input + " unrecongized\n\n\n\n" )
-                continue
+        #This method will create list of files and outputs from other
+        #nodes
+        c_node.gather_input_files(adj,OUTPUT_ID)
 
-        node_outputs = []
-        for output in current_node.output_files:
-
-            if isinstance(current_node.output_files[output],str):
-                #print(current_node.output_files[output])
-                file_path = current_node.output_files[output]
-                if file_path in id_dict.keys():
-                    continue
-                file_name = file_path.split('/')[-1]
-                node_outputs.append(Output(file_name,file_path,current_node))
-
+        for input in c_node.inputs:
+            if input in OUTPUT_ID.keys():
+                #Outputs from nodes can be lists of files
+                if isinstance(OUTPUT_ID[input],list):
+                    c_node.ids.extend(OUTPUT_ID[input])
+                else:
+                    c_node.ids.append(OUTPUT_ID[input])
+            elif input in LOCATION_ID.keys():
+                c_node.ids.append(LOCATION_ID[input])
             else:
+                print('\nNo associated ID for input: ' + input + '\n\n')
 
-                for file_path in current_node.output_files[output]:
-                    #print(file_path)
-                    if file_path in id_dict.keys():
-                        continue
-                    file_name = file_path.split('/')[-1]
-                    node_outputs.append(Output(file_name,file_path,current_node))
-
+        #will create id for node
+        node_id = c_node.mint_software()
+        #Will create c_node.comp_id
+        comp_id = c_node.mint_comp_id()
+        #Will create list of Output Objects
+        #Output Object will need:
+        #   - file_path
+        #   - output_name (should be nodename_outputname)
+        #   - comp_id
+        node_outputs = c_node.collect_outputs()
 
         for output in node_outputs:
-            id_dict[output.location] = output.mint_and_upload()
 
-    with open('/meta/inputs.json', 'w') as outfile:
-        json.dump(id_dict, outfile)
+            #Should only happen for input data
+            if output.file_path in LOCATION_ID.keys():
+                OUTPUT_ID[output.output_name] = LOCATION_ID[output.file_path]
+                continue
 
-    return id_dict
+            out_id = output.mint_and_upload()
+
+            if output.file_path != 'Not A File':
+                LOCATION_ID[output.file_path] = out_id
+            if output.output_name in OUTPUT_ID.keys():
+                if isinstance(OUTPUT_ID[output.output_name],str):
+                    OUTPUT_ID[output.output_name] = [OUTPUT_ID[output.output_name],out_id]
+                else:
+                    OUTPUT_ID[output.output_name].append(out_id)
+            else:
+                OUTPUT_ID[output.output_name] = out_id
+
+            update_id_file(LOCATION_ID,'/meta/inputs.json')
+            update_id_file(OUTPUT_ID,'/meta/output_ids.json')
+
+        index = index + 1
+
+    return OUTPUT_ID
