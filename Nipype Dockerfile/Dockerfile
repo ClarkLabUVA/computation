@@ -327,10 +327,10 @@ RUN mkdir -p ~/.jupyter && echo c.NotebookApp.ip = \"0.0.0.0\" > ~/.jupyter/jupy
 
 COPY [".", "/"]
 
+COPY workflows.py /opt/miniconda-latest/envs/neuro/lib/python3.6/site-packages/nipype/pipeline/engine/
+
 RUN chmod a+x /run_wf.sh
 
 RUN bash -c 'source activate neuro'
-
-RUN pip install minio
 
 CMD ["/bin/bash"]

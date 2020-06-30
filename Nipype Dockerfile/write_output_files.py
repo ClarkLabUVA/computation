@@ -66,4 +66,5 @@ for root, dirs, files in os.walk(path):
 with open('/meta/inputs.json', 'w') as outfile:
     json.dump(already_minted, outfile)
 id_dict = mint_and_upload('/meta/inputs.json',"Job outputs for " + str('ark:99999/' + JOBID),'ark:99999/' + JOBID)
+id_dict = mint_and_upload('/meta/output_ids.json',"Nipype outputs for " + str('ark:99999/' + JOBID),'ark:99999/' + JOBID)
 update_job_id('ark:99999/' + JOBID,supported_ids,id_dict)
