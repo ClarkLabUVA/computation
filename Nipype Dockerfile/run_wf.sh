@@ -16,6 +16,9 @@ export SPMMCRCMD='/opt/spm12-dev/run_spm12.sh /opt/matlabmcr-2010a/v713 script'
 source activate neuro
 python download_data.py $DATA
 python download_script.py $SCRIPT
-A="$(cut -d'/' -f2 <<<$SCRIPT)"
-python "/script/${SCRIPTNAME}"
-python write_output_files.py
+if python "/script/${SCRIPTNAME}"; then
+    python write_output_files.py
+    exit 0
+else
+    exit 1
+fi
