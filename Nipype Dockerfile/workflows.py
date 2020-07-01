@@ -609,10 +609,10 @@ connected.
             prov_base = op.join(self.base_dir, "workflow_provenance_%s" % datestr)
             logger.info("Provenance file prefix: %s" % prov_base)
             write_workflow_prov(execgraph, prov_base, format="all")
-        #try:
-        id_dict = new_parse(execgraph)
-        # except:
-        #     print('\n\nDetailed Parsing Failed.\n\n')
+        try:
+            id_dict = new_parse(execgraph)
+        except:
+            print('\n\nDetailed Parsing Failed.\n\n')
 
         if config.resource_monitor:
             base_dir = self.base_dir or os.getcwd()
