@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sequential-jobs
+  namespace: default
+  labels:
+    app: test
+spec:
+    volumes:
+      - name: inputs
+        emptyDir: {}
+      - name: outputs
+        emptyDir: {}
+    restartPolicy: Never
+    initContainers:
+    - name: download-data
+      image: jniestroy/helper
+      command: ['python3','/scripts/download_data.py']
+      volumeMounts:
+      - name: inputs
+        mountPath: /data/
+    - name: run-job
+      image: python
+      command: ['sh', '-c', 'for i in 1 2 3; do echo "job-2 `date`" && sleep 5s; done;']
+      volumeMounts:
+      - name: inputs
+        mountPath: /data/
+      - name: outputs
+        mountPath: /outputs/
+    containers:
+    - name: write-data
+      image: jniestroy/helper
+      volumeMounts:
+        - name: outputs
+          mountPath: /outputs/
+      # command: [ "/bin/bash", "-c", "--" ]
+      # args: [ "while true; do sleep 30; done;" ]
+      command: ['python3','/scripts/write_output_files.py']
+      restartPolicy: Never
