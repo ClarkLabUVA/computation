@@ -137,7 +137,7 @@ def nipype_job():
 
     return job.job_id
 
-@app.route('/job',methods = ['POST','GET'])
+@app.route('/spark',methods = ['POST','GET'])
 def compute():
 
     logger.info('Job endpoint handling request %s', request)
