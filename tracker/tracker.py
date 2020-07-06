@@ -63,19 +63,8 @@ def track_nipy():
 
         #Nipype Container Handles all id minting
 
-        # outputs = gather_job_outputs(track_id,bucket,in_bucket_location)
-        # output_ids, all_minted = mint_output_ids(outputs,'ark:99999/' + track_id)
-        #
-        # if not all_minted:
-        #     logger.error('Failed to mint all output ids for job %s.', track_id)
-        #
-        # logger.info('Updating Job ID: %s', track_id)
+        logger.info('Updating Job ID: %s', track_id)
         success = update_job_id('ark:99999/' + track_id,job_status,logs,[])
-        #
-        # for output_id in output_ids:
-        #     built = build_eg('ark:99999/' + track_id)
-        #     if not built:
-        #         logger.error('Failed to create eg for job %s',output_id)
 
         try:
             clean_up_pods(track_id)

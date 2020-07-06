@@ -107,13 +107,16 @@ def get_pod_logs(pod_name):
 
     namespace = "default"
 
-    pod_logs = v1.read_namespaced_pod_log(pod_name,namespace,
-                    pretty = True)
+    pod_logs = v1.read_namespaced_pod_log(pod_name,namespace,container=pod_name,pretty = True)
 
     pod_info = v1.read_namespaced_pod_status(pod_name,namespace,
                     pretty = True)
 
     status = pod_info._status.phase
+
+    if status == 'Failed' and pod_logs == '':
+        pod_logs = 'Command Unrecognized.'
+
 
     # except:
     #
