@@ -91,6 +91,29 @@ def get_distribution(id):
 
     return True, file_location
 
+def get_docker_image(id):
+    """Validates that given identifier exists in Mongo.
+        Returns location in minio. """
+
+    r = requests.get(ORS_URL + id)
+
+    if r.status_code != 200:
+
+        return False, "Identifier Doesn't Exist."
+
+    try:
+
+        data_dict = r.json()
+
+        docker_image = data_dict['image']
+
+
+    except:
+
+        return False, "image tag not found in metadata."
+
+    return True, docker_image
+
 def track(job_id,prefix):
 
     r = requests.post('http://localhost:5001/track',json = {'job_id':job_id,'output_location':prefix})

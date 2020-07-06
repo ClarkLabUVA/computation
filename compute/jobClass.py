@@ -10,9 +10,10 @@ ORS_URL = os.environ.get("ORS_URL","ors.uvadco.io/")
 
 class Job:
 
-    def __init__(self, request):
+    def __init__(self, request,custom_container = False):
 
         self.correct_inputs, self.dataset_ids, self.script_id,self.error = parse_request(request)
+        self.custom_container = custom_container
 
         if not isinstance(self.dataset_ids,list):
             self.dataset_ids = [self.dataset_ids]
@@ -20,6 +21,21 @@ class Job:
 
         if self.correct_inputs:
             _, inputs = gather_inputs(request)
+
+            if custom_container:
+                if 'containerID' in inputs.keys():
+                    self.container_id = inputs['containerID']
+                    try:
+                        self.command = inputs['command']
+                    except:
+                        self.command = 'python3'
+                    success, self.container_image = get_docker_image(self.container_id)
+                    if not success:
+                        self.correct_inputs = False
+                        self.error = self.container_image
+                else:
+                    self.correct_inputs = False
+                    self.error = 'Missing required input containerID'
 
             if 'prefix' in inputs.keys():
                 self.prefix = inputs['prefix']
@@ -64,6 +80,10 @@ class Job:
             "status":'Running'
         }
 
+        if self.custom_container:
+            base_meta['eg:usedSoftware'] = [{'@id':self.script_id},
+                                            {'@id':self.container_id}]
+
         url = ORS_URL + "shoulder/ark:99999"
 
         r = requests.post(url, data=json.dumps(base_meta))
@@ -107,6 +127,46 @@ class Job:
 
         print(self.pod)
 
+    def create_custom_k_defs(self):
+
+        with open("./yamls/custom_job.yaml") as f:
+
+            self.pod = yaml.safe_load(f)
+
+        str_datasetids = ''
+        for id in self.dataset_ids:
+            str_datasetids = str_datasetids + id + ','
+
+        self.pod_name = "sparkjob-" + self.job_id
+
+        self.pod['metadata']['name'] = "sparkjob-" + self.job_id
+
+        # self.pod['spec']['containers'][0]['name'] = "write_data"
+        # self.pod['spec']['containers'][0]['image'] = self.container_image
+
+        self.pod['metadata']['labels']['app'] = "sparkjob-" + self.job_id
+
+        envs = []
+        envs.append({'name':'ORS_URL','value':ORS_URL})
+        envs.append({'name':'DATA','value':str_datasetids})
+        envs.append({'name':'SCRIPT','value':self.script_id})
+        envs.append({'name':'SCRIPTNAME','value':self.script_location.split('/')[-1]})
+        envs.append({'name':'OUTPUT','value':self.prefix + self.job_id})
+        envs.append({'name':'JOBID','value':self.job_id})
+        envs.append({'name':'MINIO_SECRET','value':MINIO_SECRET})
+        envs.append({'name':'MINIO_ACCESS_KEY','value':MINIO_ACCESS_KEY})
+        envs.append({'name':'MINIO_URL','value':MINIO_URL})
+
+        self.pod['spec']['containers'][0]['env'] = envs
+        self.pod['spec']['initContainers'][0]['env'] = envs
+        self.pod['spec']['initContainers'][1]['env'] = envs
+
+        self.pod['spec']['initContainers'][1]['name'] = "sparkjob-" + self.job_id
+        self.pod['spec']['initContainers'][1]['image'] = self.container_image
+        self.pod['spec']['initContainers'][1]['command'] = [self.command,"/data/" + self.script_location.split('/')[-1]]
+
+
+        print(self.pod)
 
     def create_kubernetes_defs(self):
 
