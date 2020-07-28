@@ -62,12 +62,30 @@ def download_script(locations,names):
         with open('/data/' + rest.split('/')[-1], 'wb') as file_data:
             for d in data.stream(32*1024):
                 file_data.write(d)
-data_ids = os.environ.get("DATA")
-data_ids = data_ids.replace('[','').replace(']','').split(',')
-locations, names = get_distribution(data_ids)
-ids = download_all(locations,names,data_ids)
 
-script_ids = os.environ.get("SCRIPT")
-script_ids = script_ids.replace('[','').replace(']','').split(',')
-locations, names = get_distribution(script_ids)
-download_script(locations,names)
+while True:
+    try:
+        data_ids = os.environ.get("DATA")
+        data_ids = data_ids.replace('[','').replace(']','').split(',')
+        locations, names = get_distribution(data_ids)
+        ids = download_all(locations,names,data_ids)
+        with open('/meta/inputs.json', 'w') as outfile:
+            json.dump(ids, outfile)
+        with open('/meta/outputs.json', 'w') as outfile:
+            json.dump(ids, outfile)
+        break
+    except:
+        f = open('/dev/termination-log','w')
+        f.write('Downloading Data Failed.')
+        raise Exception
+while True:
+    try:
+        script_ids = os.environ.get("SCRIPT")
+        script_ids = script_ids.replace('[','').replace(']','').split(',')
+        locations, names = get_distribution(script_ids)
+        download_script(locations,names)
+        break
+    except:
+        f = open('/dev/termination-log','w')
+        f.write('Downloading Script Failed.')
+        raise Exception
