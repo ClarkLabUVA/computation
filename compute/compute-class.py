@@ -41,9 +41,18 @@ def job_status(ark):
 
 @app.route('/job',methods = ['POST','GET'])
 def random_job():
+    '''
+    Runs script on given data using container of choice.
+    {
+        "datasetID":[],
+        "scriptID":ark:99999/test,
+        'containerID':ark:99999/sample-container
+    }
+    '''
 
     logger.info('Job endpoint handling request %s', request)
 
+    #Creates job class from request
     job = Job(request,custom_container = True)
 
     if not job.correct_inputs:
@@ -57,7 +66,7 @@ def random_job():
         logger.error('Failed to mint identifier.')
         return jsonify({'error':'Minting Job Identifier failed'}),503
 
-
+    #Creates Kubernetes Pod defition
     job.create_custom_k_defs()
 
     logger.info('Creating Pod %s', str(job.pod))
@@ -75,6 +84,7 @@ def random_job():
 
     logger.info('Tracking ID %s', job.job_id)
     tracked = nitrack(job.job_id,job.prefix)
+    #tracked = 'Tracking'
 
     if 'Tracking' not in str(tracked):
 
