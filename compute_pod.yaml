@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sparksubmit
+  namespace: default
+  labels:
+    app: sparksubmit
+spec:
+  serviceAccountName: spark
+  containers:
+  - name: sparksubmit
+    imagePullPolicy: Always
+    image: jniestroy/compute
+    env:
+      - name: MINIO_ACCESS_KEY
+        value: access_key
+      - name: MINIO_URL
+        value: minionas.uvadcos.io
+      - name: MINIO_SECRET
+        value: secret
+      - name: PYTHONUNBUFFERED
+        value: "0"
+      - name: ORS_URL
+      value: "http://mds.ors/"
+    command:
+      - uwsgi
+      - --ini
+      - http.ini
+  - name: sparktracker
+    imagePullPolicy: Always
+    env:
+      - name: MINIO_ACCESS_KEY
+      value: access_key
+      - name: MINIO_URL
+      value: minionas.uvadcos.io
+      - name: MINIO_SECRET
+      value: secret
+      - name: PYTHONUNBUFFERED
+      value: "0"
+      - name: ORS_URL
+      value: "http://mds.ors/"
+    image: jniestroy/sparktracker
+    command:
+      - uwsgi
+      - --ini

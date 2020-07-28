@@ -14,7 +14,7 @@ MINIO_ACCESS_KEY = os.environ.get('MINIO_ACCESS_KEY')
 MINIO_SECRET = os.environ.get('MINIO_SECRET')
 
 ORS_URL = os.environ.get("ORS_URL","ors.uvadco.io/")
-
+EVI_PREFIX = 'evi:'
 class EverythingConverter(PathConverter):
     regex = '.*?'
 
@@ -399,10 +399,10 @@ def mint_job_id(data_id,script_id):
     return True, randomString(10)
 
     base_meta = {
-        "@type":"eg:Computation",
+        "@type":EVI_PREFIX  + "Computation",
         "began":datetime.fromtimestamp(time.time()).strftime("%A, %B %d, %Y %I:%M:%S"),
-        "eg:usedDataset":data_id,
-        "eg:usedSoftware":script_id
+        EVI_PREFIX + "usedDataset":data_id,
+        EVI_PREFIX + "usedSoftware":script_id
     }
 
     url = ORS_URL + "shoulder/ark:99999"

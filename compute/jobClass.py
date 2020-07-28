@@ -5,12 +5,25 @@ from funcs import *
 MINIO_URL = os.environ.get('MINIO_URL','minionas.uvadcos.io/')
 MINIO_ACCESS_KEY = os.environ.get('MINIO_ACCESS_KEY')
 MINIO_SECRET = os.environ.get('MINIO_SECRET')
+TRANSFER_URL = os.environ.get('TRANSFER_URL','http://transfer/')
+EVI_PREFIX = 'evi:'
 
 ORS_URL = os.environ.get("ORS_URL","ors.uvadco.io/")
 
 class Job:
 
     def __init__(self, request,custom_container = False):
+        '''
+        Ensures all required ID's were given
+        Queries MDS to get data and script location
+
+        Job class:
+            - dataset_ids: user given dataset ids
+            - script_id: user given id for software to run
+            - job_id: minted id with provenance data
+            - pod: dict defintion of job pod to be run
+            - rest: random specifics related to each endpoint
+        '''
 
         self.correct_inputs, self.dataset_ids, self.script_id,self.error = parse_request(request)
         self.custom_container = custom_container
@@ -42,6 +55,11 @@ class Job:
             else:
                 self.prefix = 'breakfast/'
 
+            if 'node' in inputs.keys():
+                self.node = inputs['node']
+            else:
+                self.node = ''
+
             if 'executor-memory' in inputs.keys():
                 self.executor_memory = inputs['executor-memory']
             else:
@@ -68,20 +86,24 @@ class Job:
 
     def mint_job_id(self):
 
+        '''
+        Mints Computation ID linking computation to data and software
+        '''
+
         datasets = []
         for id in self.dataset_ids:
             datasets.append({'@id':id})
 
         base_meta = {
-            "@type":"eg:Computation",
+            "@type":EVI_PREFIX + "Computation",
             "began":datetime.fromtimestamp(time.time()).strftime("%A, %B %d, %Y %I:%M:%S"),
-            "eg:usedDataset":datasets,
-            "eg:usedSoftware":{'@id':self.script_id},
+            EVI_PREFIX + "usedDataset":datasets,
+            EVI_PREFIX + "usedSoftware":{'@id':self.script_id},
             "status":'Running'
         }
 
         if self.custom_container:
-            base_meta['eg:usedSoftware'] = [{'@id':self.script_id},
+            base_meta[EVI_PREFIX + 'usedSoftware'] = [{'@id':self.script_id},
                                             {'@id':self.container_id}]
 
         url = ORS_URL + "shoulder/ark:99999"
@@ -96,7 +118,10 @@ class Job:
 
         return False
 
-    def create_nipype_defs(self):
+    def create_nipype_defs_old(self):
+        '''
+        Creates Nipype Pod Defintion based on template
+        '''
 
         with open("./yamls/ni_pod.yaml") as f:
 
@@ -127,7 +152,64 @@ class Job:
 
         print(self.pod)
 
+
+
+    def create_nipype_defs(self):
+        '''
+        Creates Custom Pod Defintion based on template
+        '''
+
+        with open("./yamls/ni_pod_helpers.yaml") as f:
+
+            self.pod = yaml.safe_load(f)
+
+        str_datasetids = ''
+        for id in self.dataset_ids:
+            str_datasetids = str_datasetids + id + ','
+
+        self.pod_name = "sparkjob-" + self.job_id
+
+        self.pod['metadata']['name'] = "sparkjob-" + self.job_id
+
+        # self.pod['spec']['containers'][0]['name'] = "write_data"
+        # self.pod['spec']['containers'][0]['image'] = self.container_image
+
+        self.pod['metadata']['labels']['app'] = "sparkjob-" + self.job_id
+
+        envs = []
+        envs.append({'name':'ORS_URL','value':ORS_URL})
+        envs.append({'name':'DATA','value':str_datasetids})
+        envs.append({'name':'SCRIPT','value':self.script_id})
+        envs.append({'name':'SCRIPTNAME','value':self.script_location.split('/')[-1]})
+        envs.append({'name':'OUTPUT','value':self.prefix + self.job_id})
+        envs.append({'name':'JOBID','value':self.job_id})
+        envs.append({'name':'MINIO_SECRET','value':MINIO_SECRET})
+        envs.append({'name':'MINIO_ACCESS_KEY','value':MINIO_ACCESS_KEY})
+        envs.append({'name':'MINIO_URL','value':MINIO_URL})
+        envs.append({'name':'PYTHONUNBUFFERED','value':"1"})
+        envs.append({'name':'PYTHONIOENCODING','value':"UTF-8"})
+        envs.append({'name':'TRANSFER_URL','value':TRANSFER_URL})
+
+        self.pod['spec']['containers'][0]['env'] = envs
+        self.pod['spec']['initContainers'][0]['env'] = envs
+        self.pod['spec']['initContainers'][1]['env'] = envs
+
+        if self.node != '':
+            self.pod['spec']['nodeSelector'] = {}
+            self.pod['spec']['nodeSelector']['kubernetes.io/hostname'] = self.node
+
+
+        self.pod['spec']['initContainers'][1]['name'] = "sparkjob-" + self.job_id
+        #self.pod['spec']['initContainers'][1]['command'] = ['python3',"/data/" + self.script_location.split('/')[-1]]
+
+
+        print(self.pod)
+
+
     def create_custom_k_defs(self):
+        '''
+        Creates Custom Pod Defintion based on template
+        '''
 
         with open("./yamls/custom_job.yaml") as f:
 
@@ -156,10 +238,18 @@ class Job:
         envs.append({'name':'MINIO_SECRET','value':MINIO_SECRET})
         envs.append({'name':'MINIO_ACCESS_KEY','value':MINIO_ACCESS_KEY})
         envs.append({'name':'MINIO_URL','value':MINIO_URL})
+        envs.append({'name':'PYTHONUNBUFFERED','value':"1"})
+        envs.append({'name':'PYTHONIOENCODING','value':"UTF-8"})
+        envs.append({'name':'TRANSFER_URL','value':TRANSFER_URL})
 
         self.pod['spec']['containers'][0]['env'] = envs
         self.pod['spec']['initContainers'][0]['env'] = envs
         self.pod['spec']['initContainers'][1]['env'] = envs
+
+        if self.node != '':
+            self.pod['spec']['nodeSelector'] = {}
+            self.pod['spec']['nodeSelector']['kubernetes.io/hostname'] = self.node
+
 
         self.pod['spec']['initContainers'][1]['name'] = "sparkjob-" + self.job_id
         self.pod['spec']['initContainers'][1]['image'] = self.container_image
@@ -169,6 +259,9 @@ class Job:
         print(self.pod)
 
     def create_kubernetes_defs(self):
+        '''
+        Creates Spark Pod Defintion based on template
+        '''
 
         with open("./yamls/pod.yaml") as f:
 
@@ -180,6 +273,10 @@ class Job:
 
         self.service_name = "sparkjob-" + self.job_id
         self.pod_name = "sparkjob-" + self.job_id
+
+        str_datasetids = ''
+        for id in self.dataset_ids:
+            str_datasetids = str_datasetids + id + ','
 
         str_locations = ''
         for id in self.data_locations:
@@ -202,6 +299,7 @@ class Job:
         self.pod['spec']['containers'][0]['env'].append({'name':'MINIO_SECRET','value':MINIO_SECRET})
         self.pod['spec']['containers'][0]['env'].append({'name':'DATA','value':str_locations})
         self.pod['spec']['containers'][0]['env'].append({'name':'OUTPUT','value':self.prefix + self.job_id})
+        self.pod['spec']['containers'][0]['env'].append({'name':"DATA_IDS",'value':str_datasetids})
 
         self.pod['spec']['containers'][0]['command'].append("--conf")
         self.pod['spec']['containers'][0]['command'].append("spark.hadoop.fs.s3a.endpoint=" + MINIO_URL)
@@ -228,6 +326,9 @@ class Job:
 
 
     def delete_id(self):
+        '''
+        Deletes job id
+        '''
 
         url = ORS_URL + self.job_id
 
@@ -237,6 +338,10 @@ class Job:
 
 
     def create_pod(self):
+        '''
+        Using python kubernetes client creates
+        pod from pod defintion created previously
+        '''
 
         k.config.load_incluster_config()
         v1 = k.client.CoreV1Api()
@@ -245,6 +350,10 @@ class Job:
                                         namespace="default")
 
     def create_service(self):
+        '''
+        Spark Pod needs service and pod so function creates service
+        job must have .service_def
+        '''
 
         k.config.load_incluster_config()
         v1 = k.client.CoreV1Api()

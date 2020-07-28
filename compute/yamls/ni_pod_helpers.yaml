@@ -11,33 +11,37 @@ spec:
         emptyDir: {}
       - name: outputs
         emptyDir: {}
-      - name: meta
+      - name: metadata
         emptyDir: {}
     restartPolicy: Never
     initContainers:
     - name: download-data
       image: jniestroy/helper
-      command: ['python3','/scripts/download_data.py']
       imagePullPolicy: Always
+      command: ['python3','/scripts/download_data.py']
       volumeMounts:
       - name: inputs
         mountPath: /data/
       - name: metadata
         mountPath: /meta/
     - name: run-job
-      image: python
+      image: jniestroy/nipy-runner
       imagePullPolicy: Always
-      command: ['sh', '-c', 'for i in 1 2 3; do echo "job-2 `date`" && sleep 5s; done;']
+      command:  [/run_wf.sh]
       volumeMounts:
       - name: inputs
         mountPath: /data/
       - name: outputs
         mountPath: /outputs/
+      - name: metadata
+        mountPath: /meta/
     containers:
     - name: write-data
       image: jniestroy/helper
       volumeMounts:
         - name: outputs
           mountPath: /outputs/
-      command: ['python3','/scripts/write_output_files.py']
+        - name: metadata
+          mountPath: /meta/
+      command: ['python3','/scripts/write_nipy_outputs.py']
       restartPolicy: Never
