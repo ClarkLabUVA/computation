@@ -59,3 +59,6 @@ locations, names = get_distribution(data_ids)
 ids = download_all(locations,names,data_ids)
 with open('/meta/inputs.json', 'w') as outfile:
     json.dump(ids, outfile)
+
+with open('/meta/outputs.json', 'w') as outfile:
+    json.dump(ids, outfile)

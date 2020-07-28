@@ -14,10 +14,7 @@ export FSLWISH=/usr/bin/wish
 export MATLABCMD=/opt/matlabmcr-2010a/v713/toolbox/matlab
 export SPMMCRCMD='/opt/spm12-dev/run_spm12.sh /opt/matlabmcr-2010a/v713 script'
 source activate neuro
-python download_data.py $DATA
-python download_script.py $SCRIPT
-if python "/script/${SCRIPTNAME}"; then
-    python write_output_files.py
+if python "/data/${SCRIPTNAME}"; then
     exit 0
 else
     exit 1

@@ -3,6 +3,10 @@ import requests
 import json
 ORS_URL = os.environ.get("ORS_URL","http://mds.ors/")
 JOBID = os.environ.get("JOBID","testestest")
+TRANSFER_URL = os.environ.get("TRANSFER_URL","http://transfer/")
+EVI_PREFIX = 'evi:'
+
+INTERFACE_IDS = requests.get(ORS_URL + 'ark:99999/218fcfb4-e2e3-4114-8562-e2ed765111b8').json()
 
 class Output:
     '''
@@ -28,7 +32,7 @@ class Output:
         meta = {
             'name':self.output_name,
             "@type":"Dataset",
-            "eg:generatedBy":{'@id':self.comp_id},
+            EVI_PREFIX + "generatedBy":{'@id':self.comp_id},
             "folder":JOBID
         }
 
@@ -107,14 +111,22 @@ class Node:
 
         self.parameters_id = mint(self.parameters)
 
+        interface = str(type(self.node.interface)).split("'")[1]
+
+        #If this interface already has an id use that
+        if interface in INTERFACE_IDS.keys():
+            self.id = INTERFACE_IDS[interface]
+            return self.id
+
         self.meta = {
             "name":self.name,
             "@type":"SoftwareSourceCode",
-            "interface":str(self.node.interface),
-            "parameters":self.parameters_id
+            "interface":interface,
         }
 
         self.id = mint(self.meta)
+
+        update_interface_ids(interface,self.id)
 
         return self.id
 
@@ -125,10 +137,10 @@ class Node:
             data_used.append({'@id':id})
 
         computation_meta = {
-            "@type":"eg:Computation",
+            "@type":EVI_PREFIX + "Computation",
             "name":"Computation " + str(self.name),
-            'eg:usedDataset':data_used,
-            'eg:usedSoftware':self.id
+            EVI_PREFIX + 'usedDataset':data_used,
+            EVI_PREFIX + 'usedSoftware':{'@id':self.id,'parameters':self.parameters_id}
         }
 
         self.comp_id = mint(computation_meta)
@@ -152,9 +164,21 @@ def transfer(metadata,location):
         'files':open(location,'rb'),
         'metadata':json.dumps(metadata),
     }
-    url = 'http://transfer-service/data/'
+    url = TRANSFER_URL + 'data/'
     r = requests.post(url,files=files)
-    data_id = r.json()['Minted Identifiers'][0]
+    try:
+        resp_json = r.json()
+    except:
+        resp_json = {'error':'some minting/transfer error'}
+    while 'error' in resp_json.keys():
+        print("Failed to transfer.")
+        print(resp_json['error'])
+        r = requests.post(url,files=files)
+        try:
+            resp_json = r.json()
+        except:
+            resp_json = {'error':'some minting/transfer error'}
+    data_id = resp_json['Minted Identifiers'][0]
     return data_id
 
 def inputs_from_adj_matrix(target,adj,OUTPUT_ID):
@@ -237,6 +261,12 @@ def gather_output_files(outputs):
 def update_id_file(id_dict,file_path):
     with open(file_path,'w') as outfile:
         json.dump(id_dict, outfile)
+    return
+
+def update_interface_ids(interface,id):
+
+    requests.put(ORS_URL + 'ark:99999/2e301925-2eab-4b07-8df9-fad216cdd0a2',
+                    data = json.dumps({interface:id}))
     return
 
 def parse_inputs(input_dict,already_found):
