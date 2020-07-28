@@ -12,8 +12,9 @@ import minio
 MINIO_URL = os.environ.get('MINIO_URL','minionas.uvadcos.io/')
 MINIO_ACCESS_KEY = os.environ.get('MINIO_ACCESS_KEY')
 MINIO_SECRET = os.environ.get('MINIO_SECRET')
-
+EVI_PREFIX = 'evi:'
 ORS_URL = os.environ.get("ORS_URL","ors.uvadco.io/")
+
 
 def build_eg(job_id):
 
@@ -95,6 +96,24 @@ def find_pod(pod_name):
 
     return True
 
+def get_pod_status(pod_name):
+    '''
+    Gets pod logs for job pod
+    '''
+
+    k.config.load_incluster_config()
+
+    v1 = k.client.CoreV1Api()
+
+
+    namespace = "default"
+    pod_info = v1.read_namespaced_pod_status(pod_name,namespace,
+                    pretty = True)
+
+    status = pod_info._status.phase
+
+    return status
+
 def get_pod_logs(pod_name):
     '''
     Gets pod logs for job pod
@@ -122,7 +141,37 @@ def get_pod_logs(pod_name):
     #
     #     return "error", "Couldn't get logs does pod exist?"
 
-    return status, pod_logs
+    return pod_logs
+
+def whyd_pod_fail(pod_name):
+    '''
+    Determines at which point the pod faield
+    '''
+
+    k.config.load_incluster_config()
+
+    v1 = k.client.CoreV1Api()
+
+    pod = v1.read_namespaced_pod('pod-name','default')
+
+    #If only first initContainer ran then data download failed
+    if len(pod.status.init_container_statuses) == 1:
+        failed_container = 'Download'
+        message =  pod.status.init_container_statuses[0].state.terminated.message
+
+    #kubernetes labels last successful initContainer ready
+    #so if there's 2 initContainers and second is ready that
+    #means job completed and write failed
+    elif status.container_statuses[1].ready == True:
+        failed_container = 'WriteOutputs'
+        message = pod.status.message
+
+    else:
+        failed_container = 'JobRunner'
+        message = pod.status.init_container_statuses[1].state.terminated.message
+
+    return failed_container, message
+
 
 def gather_job_outputs(job_id,bucket,rest):
     '''
@@ -178,7 +227,7 @@ def mint_output_ids(outputs,job_id):
 
         meta = {
             "name":file_name,
-            "eg:generatedBy":{'@id':job_id},
+            EVI_PREFIX + "generatedBy":{'@id':job_id},
             "distribution":[dist_meta]
         }
 
@@ -214,7 +263,7 @@ def update_job_id(job_id,job_status,logs,output_ids):
         "status":job_status,
         "logs":logs,
         'ended':time.time(),
-        'eg:supports':output_ids
+        EVI_PREFIX + 'supports':output_ids
     }
     print(output_ids)
     r = requests.put(ORS_URL + job_id,data = json.dumps(meta))

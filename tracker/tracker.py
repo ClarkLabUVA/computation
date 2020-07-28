@@ -57,10 +57,32 @@ def track_nipy():
             time.sleep(30)
 
 
-        job_status, logs = get_pod_logs('sparkjob-' + track_id)
+        job_status = get_pod_status('sparkjob-' + track_id)
+
+        # if job_status == 'Failed':
+        #     failed_pod, message = whyd_pod_fail('sparkjob-' + track_id)
+        #
+        #     if failed_pod != 'JobRunner':
+        #
+        #         logs = get_pod_logs('sparkjob-' + track_id)
+        #         logger.info('Job %s completed with status: ' + str(job_status), track_id)
+        #
+        #         success = update_job_id('ark:99999/' + track_id,job_status,logs,[])
+        #         try:
+        #             clean_up_pods(track_id)
+        #         except:
+        #             logger.error('Failed to clean up after job.', exc_info=True)
+        #
+        #         return
+
+        logs = get_pod_logs('sparkjob-' + track_id)
         logger.info('Job %s completed with status: ' + str(job_status), track_id)
 
 
+        #Something near here about if failed
+        #Below gets error from first initContainer
+        #result.status.init_container_statuses[0].state.terminated.message
+        #result = v1.read_namespaced_pod('pod-name','default')
         #Nipype Container Handles all id minting
 
         logger.info('Updating Job ID: %s', track_id)
