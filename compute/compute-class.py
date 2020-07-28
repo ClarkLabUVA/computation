@@ -7,6 +7,8 @@ from jobClass import *
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+ARK_PREFIX = '99999'
 MINIO_URL = os.environ.get('MINIO_URL','minionas.uvadcos.io/')
 MINIO_ACCESS_KEY = os.environ.get('MINIO_ACCESS_KEY')
 MINIO_SECRET = os.environ.get('MINIO_SECRET')
@@ -95,7 +97,7 @@ def random_job():
         return "failed to track"
 
 
-    return job.job_id
+    return 'ark:' + ARK_PREFIX + '/' +job.job_id
 
 
 @app.route('/nipype',methods = ['POST','GET'])
@@ -145,7 +147,7 @@ def nipype_job():
         return "failed to track"
 
 
-    return job.job_id
+    return 'ark:' + ARK_PREFIX + '/' +job.job_id
 
 @app.route('/spark',methods = ['POST','GET'])
 def compute():
@@ -155,6 +157,9 @@ def compute():
     if request.method == 'GET':
 
         running_pods = get_running_jobs()
+
+        for pod in running_pods:
+            pod = 'ark:' + ARK_PREFIX + '/' + pod
 
         return jsonify({'runningJobIds':running_pods}),200
 
@@ -213,7 +218,7 @@ def compute():
         return "failed to track"
 
 
-    return job.job_id
+    return 'ark:' + ARK_PREFIX + '/' +job.job_id
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')

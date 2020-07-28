@@ -7,6 +7,7 @@ MINIO_ACCESS_KEY = os.environ.get('MINIO_ACCESS_KEY')
 MINIO_SECRET = os.environ.get('MINIO_SECRET')
 TRANSFER_URL = os.environ.get('TRANSFER_URL','http://transfer/')
 EVI_PREFIX = 'evi:'
+ARK_PREFIX = '99999'
 
 ORS_URL = os.environ.get("ORS_URL","ors.uvadco.io/")
 
@@ -96,6 +97,7 @@ class Job:
 
         base_meta = {
             "@type":EVI_PREFIX + "Computation",
+            "name":"Computation",
             "began":datetime.fromtimestamp(time.time()).strftime("%A, %B %d, %Y %I:%M:%S"),
             EVI_PREFIX + "usedDataset":datasets,
             EVI_PREFIX + "usedSoftware":{'@id':self.script_id},
@@ -106,7 +108,7 @@ class Job:
             base_meta[EVI_PREFIX + 'usedSoftware'] = [{'@id':self.script_id},
                                             {'@id':self.container_id}]
 
-        url = ORS_URL + "shoulder/ark:99999"
+        url = ORS_URL + "shoulder/ark:" + ARK_PREFIX
 
         r = requests.post(url, data=json.dumps(base_meta))
         returned = r.json()
