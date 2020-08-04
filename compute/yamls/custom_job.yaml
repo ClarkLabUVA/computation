@@ -22,7 +22,7 @@ spec:
       volumeMounts:
       - name: inputs
         mountPath: /data/
-      - name: metadata
+      - name: meta
         mountPath: /meta/
     - name: run-job
       image: python
