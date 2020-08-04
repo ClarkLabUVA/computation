@@ -54,8 +54,14 @@ def random_job():
 
     logger.info('Job endpoint handling request %s', request)
 
+    if request.method == 'GET':
+
+        running_pods = get_running_jobs()
+
+        return jsonify({'runningJobIds':running_pods}),200
+
     #Creates job class from request
-    job = Job(request,custom_container = True)
+    job = Job(request,'custom', custom_container = True)
 
     if not job.correct_inputs:
 
@@ -85,7 +91,7 @@ def random_job():
 
 
     logger.info('Tracking ID %s', job.job_id)
-    tracked = nitrack(job.job_id,job.prefix)
+    tracked = nitrack(job)
     #tracked = 'Tracking'
 
     if 'Tracking' not in str(tracked):
@@ -97,7 +103,7 @@ def random_job():
         return "failed to track"
 
 
-    return 'ark:' + ARK_PREFIX + '/' +job.job_id
+    return 'ark:' + job.namespace + '/' +job.job_id
 
 
 @app.route('/nipype',methods = ['POST','GET'])
@@ -106,7 +112,7 @@ def nipype_job():
     logger.info('Job endpoint handling request %s', request)
 
 
-    job = Job(request)
+    job = Job(request,'nipype')
 
     if not job.correct_inputs:
 
@@ -136,7 +142,7 @@ def nipype_job():
 
 
     logger.info('Tracking ID %s', job.job_id)
-    tracked = nitrack(job.job_id,job.prefix)
+    tracked = nitrack(job)
 
     if 'Tracking' not in str(tracked):
 
@@ -147,7 +153,7 @@ def nipype_job():
         return "failed to track"
 
 
-    return 'ark:' + ARK_PREFIX + '/' +job.job_id
+    return 'ark:' + job.namespace + '/' +job.job_id
 
 @app.route('/spark',methods = ['POST','GET'])
 def compute():
@@ -164,7 +170,7 @@ def compute():
         return jsonify({'runningJobIds':running_pods}),200
 
 
-    job = Job(request)
+    job = Job(request,'sparkjob')
 
     if not job.correct_inputs:
 
@@ -206,7 +212,7 @@ def compute():
 
 
     logger.info('Tracking ID %s', job.job_id)
-    tracked = track(job.job_id,job.prefix)
+    tracked = track(job)
 
     if 'Tracking' not in str(tracked):
 
@@ -218,7 +224,7 @@ def compute():
         return "failed to track"
 
 
-    return 'ark:' + ARK_PREFIX + '/' +job.job_id
+    return 'ark:' + job.namespace + '/' +job.job_id
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')

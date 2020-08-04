@@ -6,6 +6,7 @@ import json
 ORS_URL = os.environ.get("ORS_URL","http://mds.ors/")
 JOBID = os.environ.get("JOBID","testestest")
 TRANSFER_URL = os.environ.get("TRANSFER_URL","http://transfer/")
+NS = os.environ.get("NAMESPACE","99999")
 EVI_PREFIX = 'evi:'
 
 
@@ -13,6 +14,7 @@ def mint_and_upload(file_loc,name,comp_id):
     meta = {
         'name':name,
         EVI_PREFIX + "generatedBy":{'@id':comp_id},
+        'namespace':NS,
         "folder":JOBID
     }
     id = transfer(meta,file_loc)
@@ -57,7 +59,7 @@ for root, dirs, files in os.walk(path):
             supported_ids.append(already_minted[file_loc])
             continue
         else:
-            minted = mint_and_upload(file_loc,name,'ark:99999/' + JOBID)
+            minted = mint_and_upload(file_loc,name,'ark:' + NS + '/' + JOBID)
             already_minted[file_loc] = minted
             supported_ids.append(minted)
 
@@ -70,6 +72,6 @@ for file in already_minted:
 with open('/meta/inputs.json', 'w') as outfile:
     json.dump(already_minted, outfile)
 
-id_dict = mint_and_upload('/meta/inputs.json',"Job outputs for " + str('ark:99999/' + JOBID),'ark:99999/' + JOBID)
-id_dict = mint_and_upload('/meta/output_ids.json',"Nipype outputs for " + str('ark:99999/' + JOBID),'ark:99999/' + JOBID)
-update_job_id('ark:99999/' + JOBID,supported_ids,id_dict)
+id_dict = mint_and_upload('/meta/inputs.json',"Job outputs for " + str('ark:' + NS + '/' + JOBID),'ark:' + NS + '/' + JOBID)
+id_dict = mint_and_upload('/meta/output_ids.json',"Nipype outputs for " + str('ark:' + NS + '/' + JOBID),'ark:' + NS + '/' + JOBID)
+update_job_id('ark:' + NS + '/' + JOBID,supported_ids,id_dict)

@@ -192,8 +192,15 @@ def gather_job_outputs(job_id,bucket,rest):
         outputs.append(obj.object_name)
 
     return outputs
+import random
+import string
 
-def mint_output_ids(outputs,job_id):
+def random_alphanumeric_string(length):
+    letters_and_digits = string.ascii_letters + string.digits
+    result_str = ''.join((random.choice(letters_and_digits) for i in range(length)))
+    return result_str
+
+def mint_output_ids(outputs,job_id,ns,qualifer = False):
     '''
     Mints Identifiers for all outputs of the
     computation
@@ -213,7 +220,11 @@ def mint_output_ids(outputs,job_id):
             "contentUrl":MINIO_URL + '/breakfast/' + output
         }
 
-        r = requests.post(ORS_URL + "shoulder/ark:99999",data = json.dumps(dist_meta))
+        if qualifer:
+            url = ORS_URL + "ark:"  + ns + '/' + qualifier + '/' + random_alphanumeric_string(30)
+        url = ORS_URL + "shoulder/ark:"  + ns
+
+        r = requests.post(url,data = json.dumps(dist_meta))
 
         returned = r.json()
 
@@ -227,11 +238,12 @@ def mint_output_ids(outputs,job_id):
 
         meta = {
             "name":file_name,
+            "@type":"Dataset",
             EVI_PREFIX + "generatedBy":{'@id':job_id},
             "distribution":[dist_meta]
         }
 
-        r = requests.post(ORS_URL + "shoulder/ark:99999",data = json.dumps(meta))
+        r = requests.post(ORS_URL + "shoulder/ark:" + ns,data = json.dumps(meta))
 
         returned = r.json()
 
@@ -254,22 +266,26 @@ def update_job_id(job_id,job_status,logs,output_ids):
         meta = {
             "status":job_status,
             "logs":logs,
-            'ended':time.time()
+            'emdTime':time.time()
         }
         r = requests.put(ORS_URL + job_id,data = json.dumps(meta))
         return
+
+    id_outputs = []
+    for id in output_ids:
+        id_outputs.append({"@id":id})
 
     meta = {
         "status":job_status,
         "logs":logs,
         'ended':time.time(),
-        EVI_PREFIX + 'supports':output_ids
+        EVI_PREFIX + 'supports':id_outputs
     }
     print(output_ids)
     r = requests.put(ORS_URL + job_id,data = json.dumps(meta))
     return
 
-def clean_up_pods(job_id):
+def clean_up_pods(pod_name):
     '''
     Removes completed Pod and Service
     '''
@@ -277,8 +293,8 @@ def clean_up_pods(job_id):
     k.config.load_incluster_config()
     v1 = k.client.CoreV1Api()
 
-    pod_name = "sparkjob-" + job_id
-    service_name = "sparkjob-" + job_id
+
+    service_name = pod_name
     namespace = "default"
 
 

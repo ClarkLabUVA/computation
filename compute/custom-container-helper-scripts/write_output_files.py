@@ -6,7 +6,7 @@ import json
 ORS_URL = os.environ.get("ORS_URL","http://mds.ors/")
 TRANSFER_URL = os.environ.get("TRANSFER_URL","http://transfer/")
 JOBID = os.environ.get("JOBID","testestest")
-
+NS = os.environ.get("NAMESPACE","99999")
 EVI_PREFIX = 'evi:'
 
 def mint_and_upload(file_loc,name,comp_id):
@@ -14,6 +14,7 @@ def mint_and_upload(file_loc,name,comp_id):
     meta = {
         'name':name,
         EVI_PREFIX + "generatedBy":{'@id':comp_id},
+        'namespace':NS,
         "folder":JOBID
     }
 
@@ -54,6 +55,6 @@ supported_ids = []
 for root, dirs, files in os.walk(path):
     for name in files:
         file_loc = root + '/' + name
-        minted = mint_and_upload(file_loc,name,'ark:99999/' + JOBID)
+        minted = mint_and_upload(file_loc,name,'ark:' + NS + '/' + JOBID)
         supported_ids.append(minted)
-update_job_id('ark:99999/' + JOBID,supported_ids)
+update_job_id('ark:' + NS + '/' + JOBID,supported_ids)

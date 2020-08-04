@@ -4,6 +4,7 @@ import json
 ORS_URL = os.environ.get("ORS_URL","http://mds.ors/")
 JOBID = os.environ.get("JOBID","testestest")
 TRANSFER_URL = os.environ.get("TRANSFER_URL","http://transfer/")
+NS = os.environ.get("NAMESPACE","99999")
 EVI_PREFIX = 'evi:'
 
 INTERFACE_IDS = requests.get(ORS_URL + 'ark:99999/218fcfb4-e2e3-4114-8562-e2ed765111b8').json()
@@ -33,6 +34,7 @@ class Output:
             'name':self.output_name,
             "@type":"Dataset",
             EVI_PREFIX + "generatedBy":{'@id':self.comp_id},
+            'namespace':NS,
             "folder":JOBID
         }
 
@@ -148,7 +150,7 @@ class Node:
         return self.comp_id
 
 def mint(meta):
-    url = ORS_URL + "shoulder/ark:99999"
+    url = ORS_URL + "shoulder/ark:" + NS
 
     r = requests.post(url, data=json.dumps(meta))
     returned = r.json()
@@ -166,18 +168,24 @@ def transfer(metadata,location):
     }
     url = TRANSFER_URL + 'data/'
     r = requests.post(url,files=files)
+
     try:
         resp_json = r.json()
+        if 'error' in resp_json.keys():
+            data_id = mint(metadata)
+            print(resp_json)
+            return data_id
     except:
-        resp_json = {'error':'some minting/transfer error'}
-    while 'error' in resp_json.keys():
-        print("Failed to transfer.")
-        print(resp_json['error'])
-        r = requests.post(url,files=files)
-        try:
-            resp_json = r.json()
-        except:
-            resp_json = {'error':'some minting/transfer error'}
+        data_id = mint(metadata)
+        return data_id
+    # while 'error' in resp_json.keys():
+    #     print("Failed to transfer.")
+    #     print(resp_json['error'])
+    #     r = requests.post(url,files=files)
+    #     try:
+    #         resp_json = r.json()
+    #     except:
+    #         resp_json = {'error':'some minting/transfer error'}
     data_id = resp_json['Minted Identifiers'][0]
     return data_id
 

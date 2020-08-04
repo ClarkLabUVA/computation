@@ -53,6 +53,12 @@ def parse_request(request):
         return False,'','','JSON missing required key scriptID'
 
     return True, data_id,script_id,''
+import random
+import string
+def random_alphanumeric_string(length):
+    letters_and_digits = string.ascii_letters + string.digits
+    result_str = ''.join((random.choice(letters_and_digits) for i in range(length)))
+    return result_str
 
 def get_distribution(id):
     """Validates that given identifier exists in Mongo.
@@ -114,9 +120,22 @@ def get_docker_image(id):
 
     return True, docker_image
 
-def track(job_id,prefix):
+def track(job):
 
-    r = requests.post('http://localhost:5001/track',json = {'job_id':job_id,'output_location':prefix})
+    job_id = job.job_id
+    prefix = job.prefix
+    job_type = job.job_type
+    ns = job.namespace
+
+    track = {
+            'job_id':job_id,
+            'output_location':prefix,
+            'job_type':job_type,
+            'namespace':ns,
+            'qualifer':job.qualifer
+            }
+
+    r = requests.post('http://localhost:5001/track',json = track)
 
     if r.status_code != 200:
 
@@ -124,9 +143,21 @@ def track(job_id,prefix):
 
     return r.content.decode()
 
-def nitrack(job_id,prefix):
+def nitrack(job):
 
-    r = requests.post('http://localhost:5001/nitrack',json = {'job_id':job_id,'output_location':prefix})
+    job_id = job.job_id
+    prefix = job.prefix
+    job_type = job.job_type
+    ns = job.namespace
+
+    track = {
+            'job_id':job_id,
+            'output_location':prefix,
+            'job_type':job_type,
+            'namespace':job.namespace
+            }
+
+    r = requests.post('http://localhost:5001/nitrack',json = track)
 
     if r.status_code != 200:
 
@@ -328,8 +359,12 @@ def get_running_jobs():
     for pod in pods.items:
 
         pod_name = pod.metadata.name
-        if 'sparkjob' in pod_name:
-            active_jobs.append(pod_name.replace('sparkjob-',''))
+        if 'sparkjob-' in pod_name:
+            active_jobs.append(pod_name)#.replace('sparkjob-',''))
+        if 'custom-' in pod_name:
+            active_jobs.append(pod_name)#.replace('sparkjob-',''))
+        if 'nipype-' in pod_name:
+            active_jobs.append(pod_name)#.replace('sparkjob-',''))
 
     return active_jobs
 

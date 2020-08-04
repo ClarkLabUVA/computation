@@ -7,13 +7,12 @@ MINIO_ACCESS_KEY = os.environ.get('MINIO_ACCESS_KEY')
 MINIO_SECRET = os.environ.get('MINIO_SECRET')
 TRANSFER_URL = os.environ.get('TRANSFER_URL','http://transfer/')
 EVI_PREFIX = 'evi:'
-ARK_PREFIX = '99999'
 
 ORS_URL = os.environ.get("ORS_URL","ors.uvadco.io/")
 
 class Job:
 
-    def __init__(self, request,custom_container = False):
+    def __init__(self, request, job_type, custom_container = False):
         '''
         Ensures all required ID's were given
         Queries MDS to get data and script location
@@ -28,6 +27,7 @@ class Job:
 
         self.correct_inputs, self.dataset_ids, self.script_id,self.error = parse_request(request)
         self.custom_container = custom_container
+        self.job_type = job_type
 
         if not isinstance(self.dataset_ids,list):
             self.dataset_ids = [self.dataset_ids]
@@ -55,6 +55,18 @@ class Job:
                 self.prefix = inputs['prefix']
             else:
                 self.prefix = 'breakfast/'
+
+            if 'namespace' in inputs.keys():
+                self.namespace = inputs['namespace']
+
+            else:
+                self.namespace = '99999'
+
+            if 'qualifer' in inputs.keys():
+                self.qualifer = inputs['qualifer']
+
+            else:
+                self.qualifer = False
 
             if 'node' in inputs.keys():
                 self.node = inputs['node']
@@ -98,7 +110,7 @@ class Job:
         base_meta = {
             "@type":EVI_PREFIX + "Computation",
             "name":"Computation",
-            "began":datetime.fromtimestamp(time.time()).strftime("%A, %B %d, %Y %I:%M:%S"),
+            "startTime":datetime.fromtimestamp(time.time()).strftime("%A, %B %d, %Y %I:%M:%S"),
             EVI_PREFIX + "usedDataset":datasets,
             EVI_PREFIX + "usedSoftware":{'@id':self.script_id},
             "status":'Running'
@@ -108,14 +120,17 @@ class Job:
             base_meta[EVI_PREFIX + 'usedSoftware'] = [{'@id':self.script_id},
                                             {'@id':self.container_id}]
 
-        url = ORS_URL + "shoulder/ark:" + ARK_PREFIX
+        if self.qualifer:
+            url = ORS_URL + "ark:" + self.namespace + '/' + self.qualifer + '/' + random_alphanumeric_string(30)
+        else:
+            url = ORS_URL + "shoulder/ark:" + self.namespace
 
         r = requests.post(url, data=json.dumps(base_meta))
         returned = r.json()
 
         if 'created' in returned:
 
-            self.job_id = returned['created'].split('/')[1]
+            self.job_id = '/'.join(returned['created'].split('/')[1:])
             return True
 
         return False
@@ -133,13 +148,13 @@ class Job:
         for id in self.dataset_ids:
             str_datasetids = str_datasetids + id + ','
 
-        self.pod_name = "sparkjob-" + self.job_id
+        self.pod_name = self.job_type + "-" + self.job_id
 
-        self.pod['metadata']['name'] = "sparkjob-" + self.job_id
+        self.pod['metadata']['name'] =  self.job_type + "-" + self.job_id
 
-        self.pod['spec']['containers'][0]['name'] = "sparkjob-" + self.job_id
+        self.pod['spec']['containers'][0]['name'] =  self.job_type + "-" + self.job_id
 
-        self.pod['metadata']['labels']['app'] = "sparkjob-" + self.job_id
+        self.pod['metadata']['labels']['app'] =  self.job_type + "-" + self.job_id
         self.pod['spec']['containers'][0]['env'] = []
         self.pod['spec']['containers'][0]['env'].append({'name':'ORS_URL','value':ORS_URL})
         self.pod['spec']['containers'][0]['env'].append({'name':'MINIO_ACCESS_KEY','value':MINIO_ACCESS_KEY})
@@ -150,6 +165,7 @@ class Job:
         self.pod['spec']['containers'][0]['env'].append({'name':'SCRIPTNAME','value':self.script_location.split('/')[-1]})
         self.pod['spec']['containers'][0]['env'].append({'name':'OUTPUT','value':self.prefix + self.job_id})
         self.pod['spec']['containers'][0]['env'].append({'name':'JOBID','value':self.job_id})
+        self.pod['spec']['containers'][0]['env'].append({'name':'NAMESPACE','value':self.namespace})
 
 
         print(self.pod)
@@ -169,14 +185,14 @@ class Job:
         for id in self.dataset_ids:
             str_datasetids = str_datasetids + id + ','
 
-        self.pod_name = "sparkjob-" + self.job_id
+        self.pod_name = self.job_type + "-"  + self.job_id
 
-        self.pod['metadata']['name'] = "sparkjob-" + self.job_id
+        self.pod['metadata']['name'] = self.job_type + "-"  + self.job_id
 
         # self.pod['spec']['containers'][0]['name'] = "write_data"
         # self.pod['spec']['containers'][0]['image'] = self.container_image
 
-        self.pod['metadata']['labels']['app'] = "sparkjob-" + self.job_id
+        self.pod['metadata']['labels']['app'] = self.job_type + "-"  + self.job_id
 
         envs = []
         envs.append({'name':'ORS_URL','value':ORS_URL})
@@ -191,6 +207,8 @@ class Job:
         envs.append({'name':'PYTHONUNBUFFERED','value':"1"})
         envs.append({'name':'PYTHONIOENCODING','value':"UTF-8"})
         envs.append({'name':'TRANSFER_URL','value':TRANSFER_URL})
+        envs.append({'name':'NAMESPACE','value':self.namespace})
+
 
         self.pod['spec']['containers'][0]['env'] = envs
         self.pod['spec']['initContainers'][0]['env'] = envs
@@ -201,7 +219,7 @@ class Job:
             self.pod['spec']['nodeSelector']['kubernetes.io/hostname'] = self.node
 
 
-        self.pod['spec']['initContainers'][1]['name'] = "sparkjob-" + self.job_id
+        self.pod['spec']['initContainers'][1]['name'] = self.job_type + "-"  + self.job_id
         #self.pod['spec']['initContainers'][1]['command'] = ['python3',"/data/" + self.script_location.split('/')[-1]]
 
 
@@ -221,14 +239,14 @@ class Job:
         for id in self.dataset_ids:
             str_datasetids = str_datasetids + id + ','
 
-        self.pod_name = "sparkjob-" + self.job_id
+        self.pod_name = self.job_type + "-" + self.job_id
 
-        self.pod['metadata']['name'] = "sparkjob-" + self.job_id
+        self.pod['metadata']['name'] = self.job_type + "-" + self.job_id
 
         # self.pod['spec']['containers'][0]['name'] = "write_data"
         # self.pod['spec']['containers'][0]['image'] = self.container_image
 
-        self.pod['metadata']['labels']['app'] = "sparkjob-" + self.job_id
+        self.pod['metadata']['labels']['app'] = self.job_type + "-"  + self.job_id
 
         envs = []
         envs.append({'name':'ORS_URL','value':ORS_URL})
@@ -243,6 +261,7 @@ class Job:
         envs.append({'name':'PYTHONUNBUFFERED','value':"1"})
         envs.append({'name':'PYTHONIOENCODING','value':"UTF-8"})
         envs.append({'name':'TRANSFER_URL','value':TRANSFER_URL})
+        envs.append({'name':'NAMESPACE','value':self.namespace})
 
         self.pod['spec']['containers'][0]['env'] = envs
         self.pod['spec']['initContainers'][0]['env'] = envs
@@ -253,7 +272,7 @@ class Job:
             self.pod['spec']['nodeSelector']['kubernetes.io/hostname'] = self.node
 
 
-        self.pod['spec']['initContainers'][1]['name'] = "sparkjob-" + self.job_id
+        self.pod['spec']['initContainers'][1]['name'] = self.job_type + "-"  + self.job_id
         self.pod['spec']['initContainers'][1]['image'] = self.container_image
         self.pod['spec']['initContainers'][1]['command'] = [self.command,"/data/" + self.script_location.split('/')[-1]]
 
@@ -273,8 +292,8 @@ class Job:
 
             self.service = yaml.safe_load(f)
 
-        self.service_name = "sparkjob-" + self.job_id
-        self.pod_name = "sparkjob-" + self.job_id
+        self.service_name = self.job_type + "-"  + self.job_id
+        self.pod_name = self.job_type + "-"  + self.job_id
 
         str_datasetids = ''
         for id in self.dataset_ids:
@@ -284,15 +303,15 @@ class Job:
         for id in self.data_locations:
             str_locations = 's3a://' + str_locations + id + ','
 
-        self.service['metadata']['name'] = "sparkjob-" + self.job_id
+        self.service['metadata']['name'] = self.job_type + "-"  + self.job_id
 
-        self.service['spec']['selector']['app'] = "sparkjob-" + self.job_id
+        self.service['spec']['selector']['app'] = self.job_type + "-"  + self.job_id
 
-        self.pod['metadata']['name'] = "sparkjob-" + self.job_id
+        self.pod['metadata']['name'] = self.job_type + "-"  + self.job_id
 
-        self.pod['spec']['containers'][0]['name'] = "sparkjob-" + self.job_id
+        self.pod['spec']['containers'][0]['name'] = self.job_type + "-"  + self.job_id
 
-        self.pod['metadata']['labels']['app'] = "sparkjob-" + self.job_id
+        self.pod['metadata']['labels']['app'] = self.job_type + "-" + self.job_id
 
         self.pod['spec']['containers'][0]['env'] = []
         self.pod['spec']['containers'][0]['env'].append({'name':'ORS_URL','value':ORS_URL})
@@ -302,6 +321,7 @@ class Job:
         self.pod['spec']['containers'][0]['env'].append({'name':'DATA','value':str_locations})
         self.pod['spec']['containers'][0]['env'].append({'name':'OUTPUT','value':self.prefix + self.job_id})
         self.pod['spec']['containers'][0]['env'].append({'name':"DATA_IDS",'value':str_datasetids})
+        self.pod['spec']['containers'][0]['env'].append({'name':"NAMESPACE",'value':self.namespace})
 
         self.pod['spec']['containers'][0]['command'].append("--conf")
         self.pod['spec']['containers'][0]['command'].append("spark.hadoop.fs.s3a.endpoint=" + MINIO_URL)

@@ -33,31 +33,35 @@ def track_nipy():
 
     valid, inputs = gather_inputs(request)
     track_id = inputs['job_id']
+    job_type = inputs['job_type']
+    ns = inputs['namespace']
+
+    pod_name = job_type + '-' + track_id
 
     prefix = inputs['output_location']
     bucket = prefix.split('/')[0]
     in_bucket_location = '/'.join(prefix.split('/')[1:])
 
-    full_id = 'ark:99999/' + track_id
+    full_id = 'ark:' + ns + '/' + track_id
 
     logger.info('Tracking Job ID: %s', track_id)
-    exists = find_pod('sparkjob-' + track_id)
+    exists = find_pod(pod_name)
 
     if not exists:
 
         logger.error('Pod does not exsist for job : %s', track_id)
         return "No Pod"
 
-    def track(track_id):
+    def track(track_id,pod_name):
 
         logger.info('Thread following Job ID %s started.', track_id)
 
-        while pod_running('sparkjob-' + track_id):
+        while pod_running(pod_name):
             logger.info('Tracking running Job ID %s.', track_id)
             time.sleep(30)
 
 
-        job_status = get_pod_status('sparkjob-' + track_id)
+        job_status = get_pod_status(pod_name)
 
         # if job_status == 'Failed':
         #     failed_pod, message = whyd_pod_fail('sparkjob-' + track_id)
@@ -75,7 +79,7 @@ def track_nipy():
         #
         #         return
 
-        logs = get_pod_logs('sparkjob-' + track_id)
+        logs = get_pod_logs(pod_name)
         logger.info('Job %s completed with status: ' + str(job_status), track_id)
 
 
@@ -86,15 +90,15 @@ def track_nipy():
         #Nipype Container Handles all id minting
 
         logger.info('Updating Job ID: %s', track_id)
-        success = update_job_id('ark:99999/' + track_id,job_status,logs,[])
+        success = update_job_id('ark:' +  ns + '/' + track_id,job_status,logs,[])
 
         try:
-            clean_up_pods(track_id)
+            clean_up_pods(pod_name)
         except:
             logger.error('Failed to clean up after job.', exc_info=True)
 
 
-    thread = threading.Thread(target=track, kwargs={'track_id':track_id})
+    thread = threading.Thread(target=track, kwargs={'track_id':track_id,'pod_name':pod_name})
     thread.start()
 
     return "Tracking " + track_id
@@ -114,54 +118,60 @@ def add_id_to_track():
 
     valid, inputs = gather_inputs(request)
     track_id = inputs['job_id']
+    job_type = inputs['job_type']
+    ns = inputs['namespace']
+    qualifer = inputs['qualifer']
+
+    pod_name = job_type + '-' + track_id
 
     prefix = inputs['output_location']
     bucket = prefix.split('/')[0]
     in_bucket_location = '/'.join(prefix.split('/')[1:])
 
-    full_id = 'ark:99999/' + track_id
+    full_id = 'ark:' + ns + '/' + track_id
 
     logger.info('Tracking Job ID: %s', track_id)
-    exists = find_pod('sparkjob-' + track_id)
+    exists = find_pod(pod_name)
 
     if not exists:
 
         logger.error('Pod does not exsist for job : %s', track_id)
         return "No Pod"
 
-    def track(track_id):
+    def track(track_id,pod_name):
 
         logger.info('Thread following Job ID %s started.', track_id)
 
-        while pod_running('sparkjob-' + track_id):
+        while pod_running(pod_name):
             logger.info('Tracking running Job ID %s.', track_id)
             time.sleep(30)
 
+        job_status = get_pod_status(pod_name)
+        logs = get_pod_logs(pod_name)
 
-        job_status, logs = get_pod_logs('sparkjob-' + track_id)
         logger.info('Job %s completed with status: ' + str(job_status), track_id)
 
         outputs = gather_job_outputs(track_id,bucket,in_bucket_location)
-        output_ids, all_minted = mint_output_ids(outputs,'ark:99999/' + track_id)
+        output_ids, all_minted = mint_output_ids(outputs,'ark:' + ns + '/' + track_id,ns,qualifer)
 
         if not all_minted:
             logger.error('Failed to mint all output ids for job %s.', track_id)
 
         logger.info('Updating Job ID: %s', track_id)
-        success = update_job_id('ark:99999/' + track_id,job_status,logs,output_ids)
+        success = update_job_id('ark:' + ns + '/' + track_id,job_status,logs,output_ids)
 
         for output_id in output_ids:
-            built = build_eg('ark:99999/' + track_id)
+            built = build_eg('ark:' + ns + '/' + track_id)
             if not built:
                 logger.error('Failed to create eg for job %s',output_id)
 
         try:
-            clean_up_pods(track_id)
+            clean_up_pods(pod_name)
         except:
             logger.error('Failed to clean up after job.', exc_info=True)
 
 
-    thread = threading.Thread(target=track, kwargs={'track_id':track_id})
+    thread = threading.Thread(target=track, kwargs={'track_id':track_id,'pod_name':pod_name})
     thread.start()
 
     return "Tracking " + track_id
