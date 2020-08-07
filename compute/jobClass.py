@@ -28,6 +28,7 @@ class Job:
         self.correct_inputs, self.dataset_ids, self.script_id,self.error = parse_request(request)
         self.custom_container = custom_container
         self.job_type = job_type
+        self.token = request.headers.get("Authorization")
 
         if not isinstance(self.dataset_ids,list):
             self.dataset_ids = [self.dataset_ids]
@@ -208,6 +209,7 @@ class Job:
         envs.append({'name':'PYTHONIOENCODING','value':"UTF-8"})
         envs.append({'name':'TRANSFER_URL','value':TRANSFER_URL})
         envs.append({'name':'NAMESPACE','value':self.namespace})
+        envs.append({'name':'TOKEN','value':self.token})
 
 
         self.pod['spec']['containers'][0]['env'] = envs
@@ -262,6 +264,7 @@ class Job:
         envs.append({'name':'PYTHONIOENCODING','value':"UTF-8"})
         envs.append({'name':'TRANSFER_URL','value':TRANSFER_URL})
         envs.append({'name':'NAMESPACE','value':self.namespace})
+        envs.append({'name':'TOKEN','value':self.token})
 
         self.pod['spec']['containers'][0]['env'] = envs
         self.pod['spec']['initContainers'][0]['env'] = envs
@@ -322,6 +325,8 @@ class Job:
         self.pod['spec']['containers'][0]['env'].append({'name':'OUTPUT','value':self.prefix + self.job_id})
         self.pod['spec']['containers'][0]['env'].append({'name':"DATA_IDS",'value':str_datasetids})
         self.pod['spec']['containers'][0]['env'].append({'name':"NAMESPACE",'value':self.namespace})
+        self.pod['spec']['containers'][0]['env'].append({'name':'TOKEN','value':self.token})
+
 
         self.pod['spec']['containers'][0]['command'].append("--conf")
         self.pod['spec']['containers'][0]['command'].append("spark.hadoop.fs.s3a.endpoint=" + MINIO_URL)

@@ -8,6 +8,7 @@ JOBID = os.environ.get("JOBID","testestest")
 TRANSFER_URL = os.environ.get("TRANSFER_URL","http://transfer/")
 NS = os.environ.get("NAMESPACE","99999")
 EVI_PREFIX = 'evi:'
+TOKEN =  os.environ.get('TOKEN','')
 
 
 def mint_and_upload(file_loc,name,comp_id):
@@ -26,7 +27,7 @@ def transfer(metadata,location):
         'metadata':json.dumps(metadata),
     }
     url = TRANSFER_URL + 'data/'
-    r = requests.post(url,files=files)
+    r = requests.post(url,files=files,headers = {"Authorization": TOKEN})
     data_id = r.json()['Minted Identifiers'][0]
     return data_id
 
@@ -41,7 +42,7 @@ def update_job_id(job_id,output_ids,id_dict):
         'fileIDJson':id_dict,
         EVI_PREFIX + 'supports':output_ids
     }
-    r = requests.put(ORS_URL + job_id,data = json.dumps(meta))
+    r = requests.put(ORS_URL + job_id,data = json.dumps(meta),headers = {"Authorization": TOKEN})
     return
 
 data_ids = os.environ.get("DATA").split(',')

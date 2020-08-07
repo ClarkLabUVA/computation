@@ -5,6 +5,7 @@ ORS_URL = os.environ.get("ORS_URL","http://mds.ors/")
 JOBID = os.environ.get("JOBID","testestest")
 TRANSFER_URL = os.environ.get("TRANSFER_URL","http://transfer/")
 NS = os.environ.get("NAMESPACE","99999")
+TOKEN =  os.environ.get('TOKEN','')
 EVI_PREFIX = 'evi:'
 
 INTERFACE_IDS = requests.get(ORS_URL + 'ark:99999/218fcfb4-e2e3-4114-8562-e2ed765111b8').json()
@@ -152,7 +153,7 @@ class Node:
 def mint(meta):
     url = ORS_URL + "shoulder/ark:" + NS
 
-    r = requests.post(url, data=json.dumps(meta))
+    r = requests.post(url, data=json.dumps(meta),headers = {"Authorization": TOKEN})
     returned = r.json()
 
     if 'created' in returned:
@@ -167,7 +168,7 @@ def transfer(metadata,location):
         'metadata':json.dumps(metadata),
     }
     url = TRANSFER_URL + 'data/'
-    r = requests.post(url,files=files)
+    r = requests.post(url,files=files,headers = {"Authorization": TOKEN})
 
     try:
         resp_json = r.json()
@@ -274,7 +275,7 @@ def update_id_file(id_dict,file_path):
 def update_interface_ids(interface,id):
 
     requests.put(ORS_URL + 'ark:99999/2e301925-2eab-4b07-8df9-fad216cdd0a2',
-                    data = json.dumps({interface:id}))
+                    data = json.dumps({interface:id}),headers = {"Authorization": TOKEN})
     return
 
 def parse_inputs(input_dict,already_found):

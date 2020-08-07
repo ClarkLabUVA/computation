@@ -3,7 +3,7 @@ import os
 INPUTS = os.environ.get('DATA')
 OUTPUT_FOLDER = os.environ.get('OUTPUT')
 
-
+TOKEN =  os.environ.get('TOKEN','')
 MINIO_URL = os.environ.get('MINIO_URL','minionas.uvadcos.io/')
 MINIO_ACCESS_KEY = os.environ.get('MINIO_ACCESS_KEY')
 MINIO_SECRET = os.environ.get('MINIO_SECRET')
@@ -36,7 +36,7 @@ def get_distribution(id):
             locations.append(location)
             names.append(name)
         return locations, names
-    r = requests.get(ORS_URL + id)
+    r = requests.get(ORS_URL + id,headers = {"Authorization": TOKEN})
     if r.status_code != 200:
         print(ORS_URL + id)
         return False, "Identifier Doesn't Exist."
