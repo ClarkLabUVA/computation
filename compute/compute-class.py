@@ -1,9 +1,16 @@
+#© 2020 By The Rector And Visitors Of The University Of Virginia
+
+#Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+#The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 import time,requests,json, sys, random, os, warnings, logging
 from datetime import datetime
 from flask import Flask, render_template, request, redirect,jsonify
 from funcs import *
 from jobClass import *
-
+from auth import *
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -32,7 +39,7 @@ def job_status(ark):
     logger.info('Status request for ark: %s', ark)
 
     try:
-        status =  get_job_status(ark)
+        status =  get_job_status(ark,request.headers.get("Authorization"))
     except:
         logger.error('Error getting status of ark: %s',ark)
         return jsonify({'error':'Given ark either does not exist or is not a computation'}),400

@@ -1,3 +1,10 @@
+#© 2020 By The Rector And Visitors Of The University Of Virginia
+
+#Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+#The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 import requests
 import time
 import os
@@ -200,7 +207,7 @@ def random_alphanumeric_string(length):
     result_str = ''.join((random.choice(letters_and_digits) for i in range(length)))
     return result_str
 
-def mint_output_ids(outputs,job_id,ns,qualifer = False):
+def mint_output_ids(outputs,job_id,ns,qualifer = False,token = ''):
     '''
     Mints Identifiers for all outputs of the
     computation
@@ -224,7 +231,7 @@ def mint_output_ids(outputs,job_id,ns,qualifer = False):
             url = ORS_URL + "ark:"  + ns + '/' + qualifier + '/' + random_alphanumeric_string(30)
         url = ORS_URL + "shoulder/ark:"  + ns
 
-        r = requests.post(url,data = json.dumps(dist_meta))
+        r = requests.post(url,data = json.dumps(dist_meta),headers = {"Authorization": token})
 
         returned = r.json()
 
@@ -243,7 +250,7 @@ def mint_output_ids(outputs,job_id,ns,qualifer = False):
             "distribution":[dist_meta]
         }
 
-        r = requests.post(ORS_URL + "shoulder/ark:" + ns,data = json.dumps(meta))
+        r = requests.post(ORS_URL + "shoulder/ark:" + ns,data = json.dumps(meta),headers = {"Authorization": token})
 
         returned = r.json()
 
@@ -257,7 +264,7 @@ def mint_output_ids(outputs,job_id,ns,qualifer = False):
 
     return output_ids, all_minted
 
-def update_job_id(job_id,job_status,logs,output_ids):
+def update_job_id(job_id,job_status,logs,output_ids,token = ''):
     '''
     Updates Job Identifier to show completion or
     failure of job
@@ -266,9 +273,9 @@ def update_job_id(job_id,job_status,logs,output_ids):
         meta = {
             "status":job_status,
             "logs":logs,
-            'emdTime':time.time()
+            'endTime':datetime.fromtimestamp(time.time()).strftime("%A, %B %d, %Y %I:%M:%S")
         }
-        r = requests.put(ORS_URL + job_id,data = json.dumps(meta))
+        r = requests.put(ORS_URL + job_id,data = json.dumps(meta),headers = {"Authorization": token})
         return
 
     id_outputs = []
@@ -278,11 +285,11 @@ def update_job_id(job_id,job_status,logs,output_ids):
     meta = {
         "status":job_status,
         "logs":logs,
-        'ended':time.time(),
+        'endTime':datetime.fromtimestamp(time.time()).strftime("%A, %B %d, %Y %I:%M:%S"),
         EVI_PREFIX + 'supports':id_outputs
     }
     print(output_ids)
-    r = requests.put(ORS_URL + job_id,data = json.dumps(meta))
+    r = requests.put(ORS_URL + job_id,data = json.dumps(meta),headers = {"Authorization": token})
     return
 
 def clean_up_pods(pod_name):

@@ -1,3 +1,10 @@
+#© 2020 By The Rector And Visitors Of The University Of Virginia
+
+#Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+#The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 import requests, yaml, json
 import kubernetes as k
 from funcs import *
@@ -44,7 +51,7 @@ class Job:
                         self.command = inputs['command']
                     except:
                         self.command = 'python3'
-                    success, self.container_image = get_docker_image(self.container_id)
+                    success, self.container_image = get_docker_image(self.container_id,self.token)
                     if not success:
                         self.correct_inputs = False
                         self.error = self.container_image
@@ -84,8 +91,8 @@ class Job:
             else:
                 self.executors = '1'
 
-            real_data_ids, self.data_locations = get_distribution(self.dataset_ids)
-            real_script_id, self.script_location = get_distribution(self.script_id)
+            real_data_ids, self.data_locations = get_distribution(self.dataset_ids,self.token)
+            real_script_id, self.script_location = get_distribution(self.script_id,self.token)
 
             if not real_data_ids:
 
@@ -126,7 +133,8 @@ class Job:
         else:
             url = ORS_URL + "shoulder/ark:" + self.namespace
 
-        r = requests.post(url, data=json.dumps(base_meta))
+        r = requests.post(url, data=json.dumps(base_meta),
+                            headers = {"Authorization": self.token})
         returned = r.json()
 
         if 'created' in returned:
@@ -359,7 +367,7 @@ class Job:
 
         url = ORS_URL + self.job_id
 
-        r = requests.delete(url)
+        r = requests.delete(url,headers = {"Authorization": self.token})
 
         return
 

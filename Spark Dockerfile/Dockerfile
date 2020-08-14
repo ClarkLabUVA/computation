@@ -8,4 +8,5 @@ RUN pip3 install matplotlib
 RUN pip3 install seaborn
 RUN pip3 install minio
 
+COPY . .
 RUN mkdir /data

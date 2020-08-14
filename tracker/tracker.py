@@ -1,3 +1,10 @@
+#© 2020 By The Rector And Visitors Of The University Of Virginia
+
+#Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+#The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 import time,requests,json, sys, random, os, warnings, logging, threading
 from datetime import datetime
 from flask import Flask, render_template, request, redirect,jsonify
@@ -35,6 +42,8 @@ def track_nipy():
     track_id = inputs['job_id']
     job_type = inputs['job_type']
     ns = inputs['namespace']
+    token = inputs['token']
+
 
     pod_name = job_type + '-' + track_id
 
@@ -90,7 +99,7 @@ def track_nipy():
         #Nipype Container Handles all id minting
 
         logger.info('Updating Job ID: %s', track_id)
-        success = update_job_id('ark:' +  ns + '/' + track_id,job_status,logs,[])
+        success = update_job_id('ark:' +  ns + '/' + track_id,job_status,logs,[],token)
 
         try:
             clean_up_pods(pod_name)
@@ -121,6 +130,7 @@ def add_id_to_track():
     job_type = inputs['job_type']
     ns = inputs['namespace']
     qualifer = inputs['qualifer']
+    token = inputs['token']
 
     pod_name = job_type + '-' + track_id
 
@@ -152,18 +162,18 @@ def add_id_to_track():
         logger.info('Job %s completed with status: ' + str(job_status), track_id)
 
         outputs = gather_job_outputs(track_id,bucket,in_bucket_location)
-        output_ids, all_minted = mint_output_ids(outputs,'ark:' + ns + '/' + track_id,ns,qualifer)
+        output_ids, all_minted = mint_output_ids(outputs,'ark:' + ns + '/' + track_id,ns,qualifer,token)
 
         if not all_minted:
             logger.error('Failed to mint all output ids for job %s.', track_id)
 
         logger.info('Updating Job ID: %s', track_id)
-        success = update_job_id('ark:' + ns + '/' + track_id,job_status,logs,output_ids)
+        success = update_job_id('ark:' + ns + '/' + track_id,job_status,logs,output_ids,token)
 
-        for output_id in output_ids:
-            built = build_eg('ark:' + ns + '/' + track_id)
-            if not built:
-                logger.error('Failed to create eg for job %s',output_id)
+        # for output_id in output_ids:
+        #     built = build_eg('ark:' + ns + '/' + track_id)
+        #     if not built:
+        #         logger.error('Failed to create eg for job %s',output_id)
 
         try:
             clean_up_pods(pod_name)

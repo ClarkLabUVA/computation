@@ -1,3 +1,9 @@
+#© 2020 By The Rector And Visitors Of The University Of Virginia
+
+#Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+#The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 import requests, logging
 import time
 import os
@@ -18,9 +24,9 @@ EVI_PREFIX = 'evi:'
 class EverythingConverter(PathConverter):
     regex = '.*?'
 
-def get_job_status(ark):
+def get_job_status(ark,token):
 
-    r = requests.get(ORS_URL + ark)
+    r = requests.get(ORS_URL + ark,headers = {"Authorization": token})
 
     meta = r.json()
 
@@ -60,7 +66,7 @@ def random_alphanumeric_string(length):
     result_str = ''.join((random.choice(letters_and_digits) for i in range(length)))
     return result_str
 
-def get_distribution(id):
+def get_distribution(id,token):
     """Validates that given identifier exists in Mongo.
         Returns location in minio. """
 
@@ -68,7 +74,7 @@ def get_distribution(id):
 
         locations = []
         for i in id:
-            success, location = get_distribution(i)
+            success, location = get_distribution(i,token)
 
             if success:
                 locations.append(location)
@@ -77,7 +83,7 @@ def get_distribution(id):
 
         return True, locations
 
-    r = requests.get(ORS_URL + id)
+    r = requests.get(ORS_URL + id,headers = {"Authorization": token})
 
     if r.status_code != 200:
 
@@ -97,11 +103,11 @@ def get_distribution(id):
 
     return True, file_location
 
-def get_docker_image(id):
+def get_docker_image(id,token):
     """Validates that given identifier exists in Mongo.
         Returns location in minio. """
 
-    r = requests.get(ORS_URL + id)
+    r = requests.get(ORS_URL + id,headers = {"Authorization": token})
 
     if r.status_code != 200:
 
@@ -132,7 +138,8 @@ def track(job):
             'output_location':prefix,
             'job_type':job_type,
             'namespace':ns,
-            'qualifer':job.qualifer
+            'qualifer':job.qualifer,
+            'token':job.token
             }
 
     r = requests.post('http://localhost:5001/track',json = track)
@@ -154,7 +161,8 @@ def nitrack(job):
             'job_id':job_id,
             'output_location':prefix,
             'job_type':job_type,
-            'namespace':job.namespace
+            'namespace':job.namespace,
+            'token':job.token
             }
 
     r = requests.post('http://localhost:5001/nitrack',json = track)
