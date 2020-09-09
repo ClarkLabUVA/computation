@@ -92,13 +92,15 @@ def get_distribution(id,token):
     try:
 
         data_dict = r.json()
-
-        data_url = data_dict['distribution'][0]['contentUrl']
-
+        print(data_dict)
+        if isinstance(data_dict['distribution'],list):
+            data_url = data_dict['distribution'][0]['contentUrl']
+        else:
+            data_url = data_dict['distribution']['contentUrl']
         file_location = '/'.join(data_url.split('/')[1:])
 
     except:
-
+        print(id)
         return False, "Distribution not found. Or distribution formatting different than expected."
 
     return True, file_location

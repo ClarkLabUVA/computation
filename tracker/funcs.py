@@ -276,7 +276,14 @@ def update_job_id(job_id,job_status,logs,output_ids,token = ''):
             'endTime':datetime.fromtimestamp(time.time()).strftime("%A, %B %d, %Y %I:%M:%S")
         }
         r = requests.put(ORS_URL + job_id,data = json.dumps(meta),headers = {"Authorization": token})
-        return
+        try:
+            result = r.json()
+            if 'updated' in result:
+                return True
+            else:
+                return False
+        except:
+            return False
 
     id_outputs = []
     for id in output_ids:
@@ -306,6 +313,8 @@ def clean_up_pods(pod_name):
 
 
     delete_pop = v1.delete_namespaced_pod(pod_name,namespace)
-    delete_service = v1.delete_namespaced_service(service_name,namespace)
-
+    try:
+        delete_service = v1.delete_namespaced_service(service_name,namespace)
+    except:
+        pass
     return

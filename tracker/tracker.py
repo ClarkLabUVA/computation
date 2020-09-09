@@ -101,6 +101,9 @@ def track_nipy():
         logger.info('Updating Job ID: %s', track_id)
         success = update_job_id('ark:' +  ns + '/' + track_id,job_status,logs,[],token)
 
+        if not success:
+            logger.error('Failed to update Identifier after job.')
+
         try:
             clean_up_pods(pod_name)
         except:
