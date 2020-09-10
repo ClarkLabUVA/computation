@@ -81,6 +81,11 @@ class Job:
             else:
                 self.node = ''
 
+            if 'parameters' in inputs.keys():
+                self.parameters = inputs['parameters']
+            else:
+                self.parameters = {}
+
             if 'executor-memory' in inputs.keys():
                 self.executor_memory = inputs['executor-memory']
             else:
@@ -259,6 +264,8 @@ class Job:
         self.pod['metadata']['labels']['app'] = self.job_type + "-"  + self.job_id
 
         envs = []
+        for parameter in self.parameters:
+            envs.append({'name':parameter,'value':self.parameters})
         envs.append({'name':'ORS_URL','value':ORS_URL})
         envs.append({'name':'DATA','value':str_datasetids})
         envs.append({'name':'SCRIPT','value':self.script_id})
