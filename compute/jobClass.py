@@ -120,12 +120,27 @@ class Job:
         for id in self.dataset_ids:
             datasets.append({'@id':id})
 
+        if self.qualifer:
+            url = ORS_URL + "ark:" + self.namespace + '/' + self.qualifer + '/' + random_alphanumeric_string(30)
+        else:
+            url = ORS_URL + "shoulder/ark:" + self.namespace
+
+        if parameters != {}:
+            r = requests.post(url, data=json.dumps(base_meta),
+                                headers = {"Authorization": self.token})
+            if 'created' in returned:
+                parameter_id = r.json()['created']
+            else:
+                return False
+
+
         base_meta = {
             "@type":EVI_PREFIX + "Computation",
             "name":"Computation",
             "startTime":datetime.fromtimestamp(time.time()).strftime("%A, %B %d, %Y %I:%M:%S"),
             EVI_PREFIX + "usedDataset":datasets,
             EVI_PREFIX + "usedSoftware":{'@id':self.script_id},
+            'parameters':parameter_id,
             "status":'Running'
         }
 
