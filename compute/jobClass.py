@@ -265,7 +265,7 @@ class Job:
 
         envs = []
         for parameter in self.parameters:
-            envs.append({'name':parameter,'value':self.parameters})
+            envs.append({'name':parameter,'value':self.parameters[parameter]})
         envs.append({'name':'ORS_URL','value':ORS_URL})
         envs.append({'name':'DATA','value':str_datasetids})
         envs.append({'name':'SCRIPT','value':self.script_id})
