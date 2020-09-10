@@ -125,8 +125,8 @@ class Job:
         else:
             url = ORS_URL + "shoulder/ark:" + self.namespace
 
-        if parameters != {}:
-            r = requests.post(url, data=json.dumps(base_meta),
+        if self.parameters != {}:
+            r = requests.post(url, data=json.dumps(self.parameters),
                                 headers = {"Authorization": self.token})
             if 'created' in returned:
                 parameter_id = r.json()['created']
