@@ -36,9 +36,22 @@ def get_distribution(id):
         return False, "Identifier Doesn't Exist."
     try:
         data_dict = r.json()
-        data_url = data_dict['distribution'][0]['contentUrl']
-        file_location = '/'.join(data_url.split('/')[1:])
-        name = data_dict['name']
+        if isinstance(data_dict['distribution'],list):
+            if data_dict['distribution'][-1].get('@type','') == 'DataDownload':
+                data_url = data_dict['distribution'][-1]['contentUrl']
+                file_location = '/'.join(data_url.split('/')[1:])
+            else:
+                dist_r = requests.get(ORS_URL + data_dict['distribution'][-1]['@id'])
+                data_url = dist_r.json()['name']
+                file_location = data_url
+        else:
+            if data_dict['distribution'].get('@type','') == 'DataDownload':
+                data_url = data_dict['distribution']['contentUrl']
+                file_location = '/'.join(data_url.split('/')[1:])
+            else:
+                dist_r = requests.get(ORS_URL + data_dict['distribution']['@id'])
+                data_url = dist_r.json()['name']
+                file_location = data_url
     except:
         return '',''
     return file_location, name

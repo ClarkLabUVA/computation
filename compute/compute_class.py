@@ -19,6 +19,7 @@ ARK_PREFIX = '99999'
 MINIO_URL = os.environ.get('MINIO_URL','minionas.uvadcos.io/')
 MINIO_ACCESS_KEY = os.environ.get('MINIO_ACCESS_KEY')
 MINIO_SECRET = os.environ.get('MINIO_SECRET')
+TESTING = os.environ.get("NO_AUTH",False)
 
 ORS_URL = os.environ.get("ORS_URL","ors.uvadco.io/")
 
@@ -238,4 +239,6 @@ def compute():
     return 'ark:' + job.namespace + '/' +job.job_id
 
 if __name__ == "__main__":
+    if TESTING:
+        app.config['TESTING'] = True
     app.run(host='0.0.0.0')

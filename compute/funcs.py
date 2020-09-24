@@ -90,14 +90,23 @@ def get_distribution(id,token):
         return False, "Identifier Doesn't Exist."
 
     try:
-
         data_dict = r.json()
-        print(data_dict)
         if isinstance(data_dict['distribution'],list):
-            data_url = data_dict['distribution'][0]['contentUrl']
+            if data_dict['distribution'][-1].get('@type','') == 'DataDownload':
+                data_url = data_dict['distribution'][-1]['contentUrl']
+                file_location = '/'.join(data_url.split('/')[1:])
+            else:
+                dist_r = requests.get(ORS_URL + data_dict['distribution'][-1]['@id'])
+                data_url = dist_r.json()['name']
+                file_location = data_url
         else:
-            data_url = data_dict['distribution']['contentUrl']
-        file_location = '/'.join(data_url.split('/')[1:])
+            if data_dict['distribution'].get('@type','') == 'DataDownload':
+                data_url = data_dict['distribution']['contentUrl']
+                file_location = '/'.join(data_url.split('/')[1:])
+            else:
+                dist_r = requests.get(ORS_URL + data_dict['distribution']['@id'])
+                data_url = dist_r.json()['name']
+                file_location = data_url
 
     except:
         print(id)

@@ -25,6 +25,8 @@ def token_required(handler):
 
     @wraps(handler)
     def wrapped_handler(*args, **kwargs):
+        if flask.current_app.config.get('TESTING', False):
+            return handler(*args, **kwargs)
         if flask.request.headers.get("Authorization") is None:
             return flask.Response(
                 response= json.dumps({"error": "Request Missing Authorization Header"}),

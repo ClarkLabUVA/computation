@@ -25,7 +25,7 @@ spec:
       - name: metadata
         mountPath: /meta/
     - name: run-job
-      image: jniestroy/nipy-runner
+      image: jniestroy/nipy-test:0.1
       imagePullPolicy: Always
       command:  [/run_wf.sh]
       volumeMounts:
