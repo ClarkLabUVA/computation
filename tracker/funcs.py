@@ -221,8 +221,8 @@ def mint_output_ids(outputs,job_id,ns,qualifer = False,token = ''):
         file_format = file_name.split('.')[-1]
 
         dist_meta = {
-            "@type":"DataDownload",
-            "name":file_name,
+            "@type":"Download",
+            "name":'/breakfast/' + output,
             "fileFormat":file_format,
             "contentUrl":MINIO_URL + '/breakfast/' + output
         }
