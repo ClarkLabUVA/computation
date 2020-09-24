@@ -1,0 +1,38 @@
+language: python
+
+python:
+   - "3.6"
+
+services:
+   - docker
+
+before_install:
+   - sudo apt-get update
+   - sudo apt-get install python3 python3-pip build-essential
+
+
+install:
+   - pip3 install -r requirements.txt
+
+script:
+  - cd compute
+  - python3 -m pytest -v tests/tests.py
+  - cd ..
+  - cd tracker
+  - python3 -m pytest -v tests/tracker-tests.py
+
+
+after_success:
+   - set -e
+   - cd compute
+   - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD";
+   - REPO=jniestroy/compute
+   - docker build -f Dockerfile -t $REPO:latest .;
+   - docker push $REPO:latest;
+   - echo "Pushed to" $REPO:latest;
+   - cd ..
+   - cd tracker
+   - REPO=jniestroy/tracker
+   - docker build -f Dockerfile -t $REPO:latest .;
+   - docker push $REPO:latest;
+   - echo "Pushed to" $REPO:latest;
