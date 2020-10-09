@@ -10,7 +10,9 @@ RUN pip install kubernetes
 RUN pip install flask
 RUN pip install minio
 RUN pip install uwsgi
+RUN pip install pyjwt
 
 COPY . .
+COPY compute_class.py .
 
 ENTRYPOINT [ "uwsgi", "--ini", "http.ini"]

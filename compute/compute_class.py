@@ -34,7 +34,7 @@ def homepage():
     return "Status: Working"
 
 @app.route('/job/<everything:ark>',methods = ['GET'])
-@token_required
+@check_token
 def job_status(ark):
 
     logger.info('Status request for ark: %s', ark)
@@ -51,7 +51,7 @@ def job_status(ark):
 
 
 @app.route('/job',methods = ['POST','GET'])
-@token_required
+@check_token
 def random_job():
     '''
     Runs script on given data using container of choice.
@@ -117,7 +117,7 @@ def random_job():
 
 
 @app.route('/nipype',methods = ['POST','GET'])
-@token_required
+@check_token
 def nipype_job():
 
     logger.info('Job endpoint handling request %s', request)
@@ -167,7 +167,7 @@ def nipype_job():
     return 'ark:' + job.namespace + '/' +job.job_id
 
 @app.route('/spark',methods = ['POST','GET'])
-@token_required
+@check_token
 def compute():
 
     logger.info('Job endpoint handling request %s', request)

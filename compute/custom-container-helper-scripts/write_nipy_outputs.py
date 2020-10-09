@@ -34,6 +34,7 @@ def transfer(metadata,location):
     }
     url = TRANSFER_URL + 'data/'
     r = requests.post(url,files=files,headers = {"Authorization": TOKEN})
+    print(r.content.decode())
     data_id = r.json()['Minted Identifiers'][0]
     return data_id
 

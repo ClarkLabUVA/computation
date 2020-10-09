@@ -140,9 +140,12 @@ class Job:
             "startTime":datetime.fromtimestamp(time.time()).strftime("%A, %B %d, %Y %I:%M:%S"),
             EVI_PREFIX + "usedDataset":datasets,
             EVI_PREFIX + "usedSoftware":{'@id':self.script_id},
-            'parameters':parameter_id,
             "status":'Running'
         }
+
+        if self.parameters != {}:
+            base_meta['parameters'] = parameter_id
+
 
         if self.custom_container:
             base_meta[EVI_PREFIX + 'usedSoftware'] = [{'@id':self.script_id},
