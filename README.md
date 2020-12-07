@@ -1,6 +1,6 @@
 # Compute API Documentation 
 
-The compute service handles running of 
+The compute service handles running of jobs based off identifiers. 
 
 # Endpoints
  - **/job**
