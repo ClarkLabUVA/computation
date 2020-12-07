@@ -1,9 +1,80 @@
-# Fairscape Computation Service
+# Compute API Documentation 
 
-## TODO
+The compute service handles running of 
 
-1. OpenAPI Contract for Main Service and Watcher
-2. Enumerate all methods of Job Submission to Kubernetes from python
-3. Set up Singular Spark History Server
+# Endpoints
+ - **/job**
+ - **/nypipe**
+ - **/spark**
 
-## Submission Methods of Spark Jobs to Kubernetes
+# /job
+
+Handles tracking running jobs and creating jobs with arbitrary containers. 
+
+## GET
+
+List all running jobs. 
+```console
+$ curl http://clarklab.uvarc.io/compute/job 
+```
+
+## POST
+
+Starts a new job computing the given script on the requested data. 
+
+### Parameters 
+
+ - **datasetID**
+ - **scriptID**
+ - **containerID**
+
+
+```bash
+$ curl --request POST \
+  --url https://clarklab.uvarc.io/job \
+  --header 'Authorization: Bearer YOUR_JWT' \
+  --header 'Content-Type: application/json' \
+  --data '{"datasetID":"ark:99999/data", "scriptID": "ark:99999/script", "containerID":"ark:99999/dockerID"}'
+```
+
+# /nypipe
+
+Handles tracking running jobs and creating jobs with custom nipype container for tracking detailed provenance. 
+
+## POST
+
+Starts a new job computing the given script on the requested data. 
+
+### Parameters 
+
+ - **datasetID**
+ - **scriptID**
+
+```bash
+$ curl --request POST \
+  --url https://clarklab.uvarc.io/nypipe \
+  --header 'Authorization: Bearer YOUR_JWT' \
+  --header 'Content-Type: application/json' \
+  --data '{"datasetID":"ark:99999/data", "scriptID": "ark:99999/script"}'
+```
+
+# /spark
+
+Handles tracking running jobs and creating spark jobs. 
+
+## POST
+
+Starts a new job computing the given script on the requested data. 
+
+### Parameters 
+
+ - **datasetID**
+ - **scriptID**
+
+```bash
+$ curl --request POST \
+  --url https://clarklab.uvarc.io/spark \
+  --header 'Authorization: Bearer YOUR_JWT' \
+  --header 'Content-Type: application/json' \
+  --data '{"datasetID":"ark:99999/data", "scriptID": "ark:99999/script"}'
+```
