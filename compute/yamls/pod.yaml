@@ -14,10 +14,8 @@ spec:
     image: jniestroy/spark:0.0.2
     command:
     - /opt/spark/bin/spark-submit
-    - "--master"
-    - "k8s://https://10.250.125.97:6443"
     - "--conf"
-    - "spark.kubernetes.authenticate.driver.serviceAccountName=spark2"
+    - "spark.kubernetes.authenticate.driver.serviceAccountName=spark"
     - "--conf"
     - "spark.kubernetes.namespace=default"
     - "--conf"
