@@ -30,7 +30,7 @@ def get_dist_ids(id):
             file_name = data_url.split('/')[-1]
             dist_id = data_dict['distribution'][-1]['@id']
         else:
-            dist_r = requests.get(ORS_URL + data_dict['distribution'][-1]['@id'])
+            dist_r = requests.get(ORS_URL + data_dict['distribution'][-1]['@id'],headers = {"Authorization": TOKEN})
             data_url = dist_r.json()['name']
             file_name = data_url.split('/')[-1]
             dist_id = data_dict['distribution'][-1]['@id']
@@ -40,7 +40,7 @@ def get_dist_ids(id):
             file_name = data_url.split('/')[-1]
             dist_id = data_dict['distribution']['@id']
         else:
-            dist_r = requests.get(ORS_URL + data_dict['distribution']['@id'])
+            dist_r = requests.get(ORS_URL + data_dict['distribution']['@id'],headers = {"Authorization": TOKEN})
             data_url = dist_r.json()['name']
             file_name = data_url.split('/')[-1]
             dist_id = data_dict['distribution']['@id']

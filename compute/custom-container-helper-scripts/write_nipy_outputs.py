@@ -20,6 +20,7 @@ TOKEN =  os.environ.get('TOKEN','')
 def mint_and_upload(file_loc,name,comp_id):
     meta = {
         'name':name,
+        "@type":"Dataset"
         EVI_PREFIX + "generatedBy":{'@id':comp_id},
         'namespace':NS,
         "folder":JOBID

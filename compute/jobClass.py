@@ -51,7 +51,7 @@ class Job:
                         self.command = inputs['command']
                     except:
                         self.command = 'python3'
-                    success, self.container_image = get_docker_image(self.container_id,self.token)
+                    success, self.age = get_docker_image(self.container_id,self.token)
                     if not success:
                         self.correct_inputs = False
                         self.error = self.container_image

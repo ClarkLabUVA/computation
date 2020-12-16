@@ -5,7 +5,7 @@
 
 #THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import time,requests,json, sys, random, os, warnings, logging
+import time,requests,json, sys, random, os, warnings, logging, jwt
 from datetime import datetime
 from flask import Flask, render_template, request, redirect,jsonify
 from funcs import *
@@ -20,6 +20,7 @@ MINIO_URL = os.environ.get('MINIO_URL','minionas.uvadcos.io/')
 MINIO_ACCESS_KEY = os.environ.get('MINIO_ACCESS_KEY')
 MINIO_SECRET = os.environ.get('MINIO_SECRET')
 TESTING = os.environ.get("NO_AUTH",False)
+KEY = os.environ.get('AUTH_KEY','test secret')
 
 ORS_URL = os.environ.get("ORS_URL","ors.uvadco.io/")
 
@@ -34,7 +35,7 @@ def homepage():
     return "Status: Working"
 
 @app.route('/job/<everything:ark>',methods = ['GET'])
-@check_token
+@admin_level_permission
 def job_status(ark):
 
     logger.info('Status request for ark: %s', ark)
@@ -51,7 +52,7 @@ def job_status(ark):
 
 
 @app.route('/job',methods = ['POST','GET'])
-@check_token
+@user_level_permission
 def random_job():
     '''
     Runs script on given data using container of choice.
@@ -73,10 +74,18 @@ def random_job():
     #Creates job class from request
     job = Job(request,'custom', custom_container = True)
 
+
+
     if not job.correct_inputs:
 
         return jsonify({'error':job.error}),400
 
+    json_token = jwt.decode(job.token, KEY, algorithms='HS256',audience = 'https://fairscape.org')
+    for id in job.dataset_ids:
+        if (not object_owner(id,json_token) and json_token.get('role',None) != 'admin' and not in_group(id,json_token):
+            return flask.jsonify({'error':'Must be object owner'}),401
+    if not object_owner(job.script_id,json_token) and json_token.get('role',None) != 'admin' and not in_group(id,json_token):
+        return flask.jsonify({'error':'Must be object owner'}),401
 
     minted = job.mint_job_id()
 
@@ -117,7 +126,7 @@ def random_job():
 
 
 @app.route('/nipype',methods = ['POST','GET'])
-@check_token
+@user_level_permission
 def nipype_job():
 
     logger.info('Job endpoint handling request %s', request)
@@ -128,6 +137,13 @@ def nipype_job():
     if not job.correct_inputs:
 
         return jsonify({'error':job.error}),400
+
+    json_token = jwt.decode(job.token, KEY, algorithms='HS256',audience = 'https://fairscape.org')
+    for id in job.dataset_ids:
+        if not object_owner(id,json_token) and json_token.get('role',None) != 'admin' and not in_group(id,json_token):
+            return flask.jsonify({'error':'Must be object owner'}),401
+    if not object_owner(job.script_id,json_token) and json_token.get('role',None) != 'admin' and not in_group(id,json_token):
+        return flask.jsonify({'error':'Must be object owner'}),401
 
 
     minted = job.mint_job_id()
@@ -167,7 +183,7 @@ def nipype_job():
     return 'ark:' + job.namespace + '/' +job.job_id
 
 @app.route('/spark',methods = ['POST','GET'])
-@check_token
+@user_level_permission
 def compute():
 
     logger.info('Job endpoint handling request %s', request)
@@ -188,6 +204,12 @@ def compute():
 
         return jsonify({'error':job.error}),400
 
+    json_token = jwt.decode(job.token, KEY, algorithms='HS256',audience = 'https://fairscape.org')
+    for id in job.dataset_ids:
+        if not object_owner(id,json_token) and json_token.get('role',None) != 'admin' and not in_group(id,json_token):
+            return flask.jsonify({'error':'Must be object owner'}),401
+    if not object_owner(job.script_id,json_token) and json_token.get('role',None) != 'admin' and not in_group(id,json_token):
+        return flask.jsonify({'error':'Must be object owner'}),401
 
     minted = job.mint_job_id()
 

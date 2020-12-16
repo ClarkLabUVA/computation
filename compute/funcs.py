@@ -96,7 +96,7 @@ def get_distribution(id,token):
                 data_url = data_dict['distribution'][-1]['contentUrl']
                 file_location = '/'.join(data_url.split('/')[1:])
             else:
-                dist_r = requests.get(ORS_URL + data_dict['distribution'][-1]['@id'])
+                dist_r = requests.get(ORS_URL + data_dict['distribution'][-1]['@id'],headers = {"Authorization": token})
                 data_url = dist_r.json()['name']
                 file_location = data_url
         else:
@@ -104,7 +104,7 @@ def get_distribution(id,token):
                 data_url = data_dict['distribution']['contentUrl']
                 file_location = '/'.join(data_url.split('/')[1:])
             else:
-                dist_r = requests.get(ORS_URL + data_dict['distribution']['@id'])
+                dist_r = requests.get(ORS_URL + data_dict['distribution']['@id'],headers = {"Authorization": token})
                 data_url = dist_r.json()['name']
                 file_location = data_url
 
